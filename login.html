@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Ledger - Secure Login</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary": "#3c0091",
+                        "outline": "#869486",
+                        "primary-fixed": "#6ffbbe",
+                        "error-container": "#93000a",
+                        "on-error-container": "#ffdad6",
+                        "secondary": "#d0bcff",
+                        "on-tertiary": "#472a00",
+                        "secondary-container": "#571bc1",
+                        "inverse-on-surface": "#283044",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "inverse-primary": "#006c49",
+                        "tertiary": "#ffc37b",
+                        "surface-container-high": "#222a3d",
+                        "surface-tint": "#4edea3",
+                        "surface-dim": "#0b1326",
+                        "on-secondary-fixed": "#23005c",
+                        "tertiary-fixed": "#ffddb8",
+                        "secondary-fixed-dim": "#d0bcff",
+                        "inverse-surface": "#dae2fd",
+                        "on-surface-variant": "#bbcbbb",
+                        "surface-container-low": "#131b2e",
+                        "surface-container": "#171f33",
+                        "on-background": "#dae2fd",
+                        "on-tertiary-fixed": "#2a1700",
+                        "surface": "#0b1326",
+                        "on-primary": "#003824",
+                        "outline-variant": "#3d4a3e",
+                        "surface-variant": "#2d3449",
+                        "on-secondary-container": "#c4abff",
+                        "surface-container-lowest": "#060e20",
+                        "primary-container": "#33ca90",
+                        "surface-container-highest": "#2d3449",
+                        "on-primary-fixed": "#002113",
+                        "on-secondary-fixed-variant": "#5516be",
+                        "error": "#ffb4ab",
+                        "surface-bright": "#31394d",
+                        "on-primary-fixed-variant": "#005236",
+                        "on-error": "#690005",
+                        "tertiary-container": "#f7a00f",
+                        "primary-fixed-dim": "#4edea3",
+                        "background": "#0b1326",
+                        "on-tertiary-container": "#633d00",
+                        "primary": "#58e7aa",
+                        "on-surface": "#dae2fd",
+                        "on-primary-container": "#005035",
+                        "secondary-fixed": "#e9ddff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+    /* Add this to your existing style block */
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* This is the "kill switch" for scrolling */
+    }
+    
+    /* ... rest of your existing CSS ... */
+        body { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ambient-shadow {
+            box-shadow: 0px 12px 32px rgba(6, 14, 32, 0.4);
+        }
+        .ghost-border {
+            outline: 1px solid rgba(61, 74, 62, 0.15);
+        }
+        
+        /* Cross-browser scrollbar hiding */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-screen w-screen overflow-hidden flex items-center justify-center p-4 md:p-8">
+    
+    <main class="w-full h-full max-h-[90vh] max-w-[1100px] grid grid-cols-1 md:grid-cols-12 gap-0 overflow-hidden rounded-xl ambient-shadow bg-surface-container-low ghost-border">
+        
+        <section class="hidden md:flex md:col-span-5 relative flex-col justify-center p-12 overflow-hidden bg-surface-container-highest">
+            <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(circle at 2px 2px, #3d4a3e 1px, transparent 0); background-size: 24px 24px;"></div>
+            
+            <div class="relative z-10 mb-auto mt-4">
+                <div class="flex items-center gap-3 mb-16">
+                    <span class="material-symbols-outlined text-primary text-7xl" data-icon="architecture">architecture</span>
+                    <h1 class="text-6xl font-extrabold tracking-tight text-primary">Ledger</h1>
+                </div>
+                
+                <div class="space-y-6">
+                    <h2 class="text-4xl font-bold tracking-tight text-on-surface leading-tight">
+                        Design your <span class="text-secondary">financial future</span> with precision.
+                    </h2>
+                    <p class="text-on-surface-variant text-lg max-w-sm">
+                        Your vault & Your assets, meticulously managed under a secure framework.
+                    </p>
+                </div>
+            </div>
+
+            <div class="absolute bottom-0 right-0 w-full h-full opacity-10 pointer-events-none">
+                <img alt="abstract technological grid" class="w-full h-full object-cover" data-alt="abstract technological digital grid with glowing nodes and dark blue architectural depth representing secure data flow" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDetB0M4A-z7eseV4PmTniqxpJsJWaJL_y9JltVuGC4V0zDc6r1-r-1cEfKE6ymB9GnKhZyHLJz_vFD8xZlXF4XXWBa9wjpr3xJNN7snwecmVtVGHdvWXd3iVExw1QOz1j8ZLLKKvkPDHn0XVdiliG8rPLPPEuRPD7cla9M5yA2GxwV6J_LdT8tQlz1v2LoTp5XcIAWvMRplJ9kiiPVDX8U_gkLhnudRIoVp5xBIx5BpW25ZMxYoFfFasDG14iBCu3j42-i6cM6780"/>
+            </div>
+        </section>
+
+        <section class="col-span-1 md:col-span-7 p-8 md:p-12 flex flex-col justify-center bg-surface h-full overflow-hidden">
+            <div class="max-w-md mx-auto w-full">
+                <div class="mb-10">
+                    <h3 class="text-3xl font-bold text-on-surface mb-2">Welcome Back</h3>
+                    <p class="text-on-surface-variant">Identify yourself to access the ledger.</p>
+                </div>
+                
+                <form id="loginForm" class="space-y-6" novalidate>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-on-surface-variant" for="email">User ID (Email)</label>
+                        <div class="relative group">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant group-focus-within:text-primary transition-colors">alternate_email</span>
+                            <input class="w-full bg-surface-container-highest border-none rounded-xl py-4 pl-12 pr-4 text-on-surface focus:ring-2 focus:ring-primary/30 transition-all outline-none" id="email" placeholder="name@domain.com" type="email"/>
+                        </div>
+                        <p id="emailError" class="text-error text-[10px] font-bold mt-1 hidden">Enter a valid username</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="block text-sm font-medium text-on-surface-variant" for="password">Access Key</label>
+                            <a class="text-xs font-bold text-secondary hover:underline transition-all" href="#">Forgot Key?</a>
+                        </div>
+                        <div class="relative group">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant group-focus-within:text-primary transition-colors">lock</span>
+                            <input class="w-full bg-surface-container-highest border-none rounded-xl py-4 pl-12 pr-12 text-on-surface focus:ring-2 focus:ring-primary/30 transition-all outline-none" id="password" placeholder="••••••••" type="password"/>
+                            <button class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface" type="button">
+                                <span class="material-symbols-outlined">visibility</span>
+                            </button>
+                        </div>
+                        <p id="passwordError" class="text-error text-[10px] font-bold mt-1 hidden"></p>
+                    </div>
+
+                    <div class="pt-6">
+                        <button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold py-4 rounded-xl shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2" type="submit">
+                            <span>Initialize Session</span>
+                            <span class="material-symbols-outlined text-xl" data-icon="arrow_forward">arrow_forward</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-12 text-center">
+                    <p class="text-on-surface-variant text-sm">
+                        New user? <a class="text-primary font-bold hover:underline" href="#">Register</a>
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            // 1. Grab our elements
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const emailError = document.getElementById('emailError');
+            const passwordError = document.getElementById('passwordError');
+
+            // 2. Reset visibility every time the button is clicked
+            emailError.classList.add('hidden');
+            passwordError.classList.add('hidden');
+
+            let isValid = true;
+
+            // 3. Username (Email) Validation
+            const emailValue = emailInput.value.trim();
+            
+            if (!emailValue) {
+                // If the box is completely empty
+                emailError.innerText = "Enter a valid username";
+                emailError.classList.remove('hidden');
+                isValid = false;
+            } else if (!emailValue.includes('@')) {
+                // If they typed something but forgot the '@'
+                emailError.innerText = "User IDs must include an '@' symbol";
+                emailError.classList.remove('hidden');
+                isValid = false;
+            }
+
+            // 4. Password Validation
+            const passwordValue = passwordInput.value.trim();
+
+            if (!passwordValue) {
+                passwordError.innerText = "Enter a password";
+                passwordError.classList.remove('hidden');
+                isValid = false;
+            } else if (passwordValue.length < 8) {
+                passwordError.innerText = "Access Key must be at least 8 characters";
+                passwordError.classList.remove('hidden');
+                isValid = false;
+            }
+
+            // 5. The Grand Opening
+            if (isValid) {
+                // Everything looks perfect. Let's go to the dashboard!
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>
