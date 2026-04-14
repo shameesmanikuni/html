@@ -184,10 +184,12 @@
                     </div>
                     <p class="text-on-surface-variant font-medium mb-2 uppercase tracking-widest text-xs">Net Balance
                     </p>
-                    <h2 class="text-4xl font-extrabold text-on-surface tracking-tighter">$142,580.00</h2>
-                    <div class="mt-4 flex items-center gap-2 text-primary">
-                        <span class="material-symbols-outlined text-sm">trending_up</span>
-                        <span class="text-sm font-bold">+2.4% from last month</span>
+                    <h2 id="stat-net" class="text-4xl font-extrabold text-on-surface tracking-tighter">₹0.00</h2>
+                    <div class="mt-4 flex items-center gap-3">
+                        <span id="stat-percentage"
+                            class="text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">0.0%</span>
+                        <span class="text-xs text-on-surface-variant font-bold uppercase tracking-widest">From Last
+                            Transaction</span>
                     </div>
                 </div>
                 <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -200,7 +202,7 @@
                             </div>
                             <p class="text-on-surface-variant text-sm font-bold uppercase">Total Income</p>
                         </div>
-                        <p class="text-3xl font-bold text-primary tracking-tight">$12,450.00</p>
+                        <p id="stat-income" class="text-3xl font-bold text-primary tracking-tight">₹0.00</p>
                     </div>
                     <div
                         class="bg-surface-container-low rounded-xl p-6 flex flex-col justify-center border border-outline-variant/10">
@@ -211,7 +213,7 @@
                             </div>
                             <p class="text-on-surface-variant text-sm font-bold uppercase">Total Expenses</p>
                         </div>
-                        <p class="text-3xl font-bold text-secondary tracking-tight">$8,210.00</p>
+                        <p id="stat-expense" class="text-3xl font-bold text-secondary tracking-tight">₹0.00</p>
                     </div>
                 </div>
             </div>
@@ -235,83 +237,7 @@
                 </div>
             </div>
 
-            <div class="space-y-4 pb-8">
-                <div
-                    class="group flex items-center justify-between p-4 md:p-6 bg-surface-container-low hover:bg-surface-container-high rounded-2xl transition-all duration-300 border border-transparent hover:border-outline-variant/15">
-                    <div class="flex items-center gap-5">
-                        <div
-                            class="w-12 h-12 rounded-xl bg-surface-container-highest flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
-                            <span class="material-symbols-outlined">shopping_cart</span>
-                        </div>
-                        <div>
-                            <p class="text-on-surface font-bold">Cloud Server Architecture</p>
-                            <p class="text-on-surface-variant text-sm">Infrastructure • 12 Oct 2023</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-lg font-bold text-secondary">-$2,450.00</p>
-                        <span
-                            class="text-[10px] px-2 py-0.5 rounded bg-secondary/10 text-secondary uppercase font-black">Approved</span>
-                    </div>
-                </div>
-                <div
-                    class="group flex items-center justify-between p-4 md:p-6 bg-surface-container-low hover:bg-surface-container-high rounded-2xl transition-all duration-300 border border-transparent hover:border-outline-variant/15">
-                    <div class="flex items-center gap-5">
-                        <div
-                            class="w-12 h-12 rounded-xl bg-surface-container-highest flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                            <span class="material-symbols-outlined">payments</span>
-                        </div>
-                        <div>
-                            <p class="text-on-surface font-bold">Monthly Retainer - Apex Corp</p>
-                            <p class="text-on-surface-variant text-sm">Income • 10 Oct 2023</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-lg font-bold text-primary">+$8,000.00</p>
-                        <span
-                            class="text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary uppercase font-black">Settled</span>
-                    </div>
-                </div>
-                <div
-                    class="group flex items-center justify-between p-4 md:p-6 bg-surface-container-low hover:bg-surface-container-high rounded-2xl transition-all duration-300 border border-transparent hover:border-outline-variant/15">
-                    <div class="flex items-center gap-5">
-                        <div
-                            class="w-12 h-12 rounded-xl bg-surface-container-highest flex items-center justify-center text-tertiary group-hover:scale-110 transition-transform">
-                            <span class="material-symbols-outlined">restaurant</span>
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <p class="text-on-surface font-bold">Architectural Summit Dinner</p>
-                                <span class="material-symbols-outlined text-tertiary text-sm"
-                                    style="font-variation-settings: 'FILL' 1;">warning</span>
-                            </div>
-                            <p class="text-on-surface-variant text-sm">Entertainment • 09 Oct 2023</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-lg font-bold text-on-surface">-$1,240.50</p>
-                        <span
-                            class="text-[10px] px-2 py-0.5 rounded bg-tertiary/10 text-tertiary uppercase font-black">Flagged</span>
-                    </div>
-                </div>
-                <div
-                    class="group flex items-center justify-between p-4 md:p-6 bg-surface-container-low hover:bg-surface-container-high rounded-2xl transition-all duration-300 border border-transparent hover:border-outline-variant/15">
-                    <div class="flex items-center gap-5">
-                        <div
-                            class="w-12 h-12 rounded-xl bg-surface-container-highest flex items-center justify-center text-[#bbcbbb] group-hover:scale-110 transition-transform">
-                            <span class="material-symbols-outlined">commute</span>
-                        </div>
-                        <div>
-                            <p class="text-on-surface font-bold">Uber Business Trip</p>
-                            <p class="text-on-surface-variant text-sm">Travel • 08 Oct 2023</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-lg font-bold text-on-surface">-$42.00</p>
-                        <span
-                            class="text-[10px] px-2 py-0.5 rounded bg-on-surface-variant/10 text-on-surface-variant uppercase font-black">Pending</span>
-                    </div>
-                </div>
+            <div id="transaction-list" class="space-y-4 pb-8">
             </div>
         </div>
     </main>

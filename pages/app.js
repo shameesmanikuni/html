@@ -176,20 +176,23 @@ function setupFormHandler() {
 }
 
 // Render the Transaction List
+// Render the Transaction List (Full Page View)
 async function loadTransactions() {
     try {
         const response = await fetch(`${API_URL}/transactions?user_id=${CURRENT_USER_ID}`);
         const transactions = await response.json();
-
-        updateDashboardStats(transactions);
-
-        // NOTE: Make sure you have a <div id="transaction-list"></div> in your HTML where you want these to show up!
-        const list = document.getElementById('transaction-list');
-
-        if (!list) return; // Skip if element isn't on this page
+        
+        // 1. ALWAYS run the math (this fills the top boxes on this page!)
+        if (typeof updateDashboardStats === 'function') {
+            updateDashboardStats(transactions);
+        }
+        
+        // 2. ONLY draw the list if the container exists on this page
+        const list = document.getElementById('transaction-list'); 
+        if (!list) return; 
 
         if (transactions.length === 0) {
-            list.innerHTML = '<p class="text-center text-on-surface-variant p-4">No transactions found.</p>';
+            list.innerHTML = '<p class="text-center text-on-surface-variant p-8 font-bold">No transactions found in the ledger.</p>';
             return;
         }
 
@@ -197,28 +200,37 @@ async function loadTransactions() {
             const isExpense = t.transaction_type === 'expense';
             const colorClass = isExpense ? 'text-error' : 'text-primary';
             const sign = isExpense ? '-' : '+';
-            const icon = isExpense ? 'shopping_cart' : 'payments';
+            
+            // Get our custom icon and background color from the Phase 2 function
+            const style = getCategoryIcon(t.category_name);
 
+            // Add the description if it exists
             const descHtml = t.description ? `<span class="opacity-75"> • ${t.description}</span>` : '';
 
-            // Formatting the date nicely
-            const dateObj = new Date(t.transaction_date);
-            const formattedDate = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            // --- THE DATE & TIME FIX ---
+            // We use 'created_at' because it holds the exact timestamp, falling back to transaction_date just in case
+            const dateObj = new Date(t.created_at || t.transaction_date);
+            const formattedDate = dateObj.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+            // Format the exact time (e.g., 02:14 PM)
+            const formattedTime = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+            
+            const formattedAmount = parseFloat(t.amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
+            // Notice we completely removed the badgebg logic and the Settled span!
             return `
-                <div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-high transition-colors">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center text-secondary">
-                            <span class="material-symbols-outlined">${icon}</span>
+                <div class="group flex items-center justify-between p-4 md:p-6 bg-surface-container-low hover:bg-surface-container-high rounded-2xl transition-all duration-300 border border-transparent hover:border-outline-variant/15">
+                    <div class="flex items-center gap-5">
+                        <div class="w-12 h-12 rounded-xl ${style.color} flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                            <span class="material-symbols-outlined">${style.icon}</span>
                         </div>
                         <div>
-                            <p class="font-bold text-sm">${t.name}</p>
-                            <p class="text-xs text-on-surface-variant">
-                                ${t.category_name} ${descHtml} • ${formattedDate}
-                            </p>
+                            <p class="text-on-surface text-lg font-bold">${t.name}</p>
+                            <p class="text-on-surface-variant text-sm">${t.category_name} ${descHtml} • ${formattedDate} at ${formattedTime}</p>
                         </div>
                     </div>
-                    <p class="font-bold ${colorClass}">${sign}₹${parseFloat(t.amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    <div class="text-right flex flex-col justify-center h-full">
+                        <p class="text-xl font-bold ${colorClass}">${sign}₹${formattedAmount}</p>
+                    </div>
                 </div>
             `;
         }).join('');
