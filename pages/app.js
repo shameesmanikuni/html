@@ -319,6 +319,7 @@ function updateDashboardStats(transactions) {
     const elAssets = document.getElementById('stat-assets');
     const elInvestments = document.getElementById('stat-investments');
     const elPercentage = document.getElementById('stat-percentage');
+    const elHealth = document.getElementById('health-status');
 
     if (elNet) elNet.innerText = formatCash(netBalance);
     if (elIncome) elIncome.innerText = formatCash(totalIncome);
@@ -332,7 +333,145 @@ function updateDashboardStats(transactions) {
         if (isPositive) {
             elPercentage.className = "text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded";
         } else {
-            elPercentage.className = "text-sm font-bold text-error bg-error/10 px-2 py-0.5 rounded"; // Uses your Tailwind red color
+            elPercentage.className = "text-sm font-bold text-error bg-error/10 px-2 py-0.5 rounded"; 
         }
     }
+
+    if (elHealth) {
+        if (netBalance >= 0) {
+            elHealth.innerText = "Optimized";
+            elHealth.className = "text-primary font-bold";
+        } else {
+            elHealth.innerText = "Unhealthy"; // You can change this to "Unhealthy" if you prefer!
+            elHealth.className = "text-error font-bold animate-pulse"; // Added a red pulse effect for warnings!
+        }
+    }
+
+    // (This goes at the bottom of updateDashboardStats)
+    // ...
+    // ... previous code ...
+    if (elPercentage) {
+        elPercentage.innerText = percentageText;
+        if (isPositive) {
+            elPercentage.className = "text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded";
+        } else {
+            elPercentage.className = "text-sm font-bold text-error bg-error/10 px-2 py-0.5 rounded"; 
+        }
+    }
+
+    // ADD THESE TWO LINES HERE!
+    renderRecentFlux(transactions);
+    renderStructuralBreakdown(netBalance, totalAssets, totalInvestments);
+}
+
+// ==========================================
+// --- 5. UI GENERATION HELPERS ---
+// ==========================================
+
+// Maps categories to specific icons and colors
+function getCategoryIcon(categoryName) {
+    const icons = {
+        'Food & Dining': { icon: 'restaurant', color: 'text-tertiary bg-tertiary/20' },
+        'Transportation': { icon: 'directions_car', color: 'text-on-surface bg-surface-bright' },
+        'Shopping': { icon: 'shopping_bag', color: 'text-primary bg-primary/20' },
+        'Utilities': { icon: 'bolt', color: 'text-secondary bg-secondary/20' },
+        'Rent': { icon: 'home', color: 'text-error bg-error/20' },
+        'Salary': { icon: 'payments', color: 'text-primary bg-primary/20' },
+        'Entertainment': { icon: 'movie', color: 'text-secondary bg-secondary/20' },
+        'Investment': { icon: 'trending_up', color: 'text-primary bg-primary/20' },
+        'Asset': { icon: 'real_estate_agent', color: 'text-secondary bg-secondary/20' },
+        'Miscellaneous': { icon: 'category', color: 'text-on-surface bg-surface-bright' }
+    };
+    // Fallback if they make a custom category
+    return icons[categoryName] || { icon: 'receipt_long', color: 'text-on-surface bg-surface-bright' }; 
+}
+
+// Renders the 4 most recent transactions on the dashboard
+function renderRecentFlux(transactions) {
+    const container = document.getElementById('recent-flux-list');
+    if (!container) return; // Skip if not on dashboard
+
+    // Grab only the first 4 transactions
+    const recent = transactions.slice(0, 4);
+
+    if (recent.length === 0) {
+        container.innerHTML = '<p class="text-sm text-center text-on-surface-variant p-4">No recent transactions to display.</p>';
+        return;
+    }
+
+    container.innerHTML = recent.map(t => {
+        const style = getCategoryIcon(t.category_name);
+        const isExpense = t.transaction_type === 'expense';
+        const sign = isExpense ? '-' : '+';
+        const colorClass = isExpense ? 'text-error' : 'text-primary';
+        
+        const dateObj = new Date(t.transaction_date);
+        const timeStr = dateObj.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+
+        return `
+            <div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-high transition-colors">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full ${style.color} flex items-center justify-center">
+                        <span class="material-symbols-outlined">${style.icon}</span>
+                    </div>
+                    <div>
+                        <p class="font-bold text-sm truncate w-48">${t.name}</p>
+                        <p class="text-xs text-on-surface-variant">${t.category_name} • ${timeStr}</p>
+                    </div>
+                </div>
+                <p class="font-bold ${colorClass}">${sign}₹${parseFloat(t.amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+            </div>
+        `;
+    }).join('');
+}
+
+// Calculates and draws the Donut Chart
+function renderStructuralBreakdown(cash, assets, investments) {
+    const elDonut = document.getElementById('donut-chart');
+    if (!elDonut) return; // Skip if not on dashboard
+
+    // Prevent negative numbers from breaking the pie chart geometry
+    const safeCash = Math.max(0, cash);
+    const safeAssets = Math.max(0, assets);
+    const safeInvestments = Math.max(0, investments);
+    const total = safeCash + safeAssets + safeInvestments;
+
+    const elAssets = document.getElementById('pct-assets');
+    const elInvestments = document.getElementById('pct-investments');
+    const elCash = document.getElementById('pct-cash');
+    const elCenter = document.getElementById('donut-center-text');
+
+    if (total === 0) {
+        // Reset to empty state if they have no money logged
+        elDonut.style.background = 'conic-gradient(#222a3d 0% 100%)';
+        if (elAssets) elAssets.innerText = '0%';
+        if (elInvestments) elInvestments.innerText = '0%';
+        if (elCash) elCash.innerText = '0%';
+        if (elCenter) elCenter.innerText = '0%';
+        return;
+    }
+
+    // Calculate Percentages
+    const pctA = (safeAssets / total) * 100;
+    const pctI = (safeInvestments / total) * 100;
+    const pctC = (safeCash / total) * 100;
+
+    // Update the HTML text
+    if (elAssets) elAssets.innerText = Math.round(pctA) + '%';
+    if (elInvestments) elInvestments.innerText = Math.round(pctI) + '%';
+    if (elCash) elCash.innerText = Math.round(pctC) + '%';
+    
+    // The center shows total percentage of wealth safely "Invested" (Assets + Investments)
+    const totalInvested = Math.round(pctA + pctI);
+    if (elCenter) elCenter.innerText = totalInvested + '%';
+
+    // Draw the CSS Pie Chart!
+    const point1 = pctA;
+    const point2 = pctA + pctI;
+    
+    elDonut.style.background = `conic-gradient(
+        #58e7aa 0% ${point1}%, 
+        #d0bcff ${point1}% ${point2}%, 
+        #31394d ${point2}% 100%
+    )`;
 }

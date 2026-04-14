@@ -195,8 +195,8 @@
                 <div class="flex justify-between items-end mb-8">
                     <div>
                         <h2 class="text-3xl font-extrabold tracking-tight text-on-surface">Portfolio Overview</h2>
-                        <p class="text-on-surface-variant">Financial structure health: <span
-                                class="text-primary">Optimized</span></p>
+                        <p class="text-on-surface-variant">Financial structure health: <span id="health-status"
+                                class="text-primary font-bold">Optimized</span></p>
                     </div>
                     <div class="flex gap-3">
                         <button
@@ -258,92 +258,45 @@
                     <div class="col-span-12 lg:col-span-8 bg-surface-container-low rounded-xl p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-bold">Recent Flux</h3>
-                            <button class="text-xs text-primary font-bold hover:underline">View All Ledger</button>
+                            <a href="./pages/transactions.html"
+                                class="text-xs text-primary font-bold hover:underline">View All Ledger</a>
                         </div>
-                        <div class="space-y-2">
-                            <div
-                                class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-high transition-colors">
-                                <div class="flex items-center gap-4">
-                                    <div
-                                        class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center text-secondary">
-                                        <span class="material-symbols-outlined">shopping_cart</span>
-                                    </div>
-                                    <div>
-                                        <p class="font-bold text-sm">Apple Store - Vision Pro</p>
-                                        <p class="text-xs text-on-surface-variant">Electronics • Today, 2:14 PM</p>
-                                    </div>
-                                </div>
-                                <p class="font-bold text-error">-₹3,499.00</p>
-                            </div>
-                            <div
-                                class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-high transition-colors">
-                                <div class="flex items-center gap-4">
-                                    <div
-                                        class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                                        <span class="material-symbols-outlined">payments</span>
-                                    </div>
-                                    <div>
-                                        <p class="font-bold text-sm">Architectural Consulting Fee</p>
-                                        <p class="text-xs text-on-surface-variant">Income • Yesterday, 10:00 AM</p>
-                                    </div>
-                                </div>
-                                <p class="font-bold text-primary">+₹8,500.00</p>
-                            </div>
-                            <div
-                                class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-high transition-colors">
-                                <div class="flex items-center gap-4">
-                                    <div
-                                        class="w-10 h-10 rounded-full bg-tertiary-container/20 flex items-center justify-center text-tertiary">
-                                        <span class="material-symbols-outlined">restaurant</span>
-                                    </div>
-                                    <div>
-                                        <p class="font-bold text-sm">The High Ground Dining</p>
-                                        <p class="text-xs text-on-surface-variant">Lifestyle • Oct 24, 8:45 PM</p>
-                                    </div>
-                                </div>
-                                <p class="font-bold text-error">-₹245.50</p>
-                            </div>
+                        <div id="recent-flux-list" class="space-y-2">
                         </div>
                     </div>
+
                     <div class="col-span-12 lg:col-span-4 bg-surface-container-low rounded-xl p-6">
                         <h3 class="text-lg font-bold mb-6">Structural Breakdown</h3>
                         <div class="relative flex items-center justify-center mb-6">
-                            <svg class="w-40 h-40 transform -rotate-90">
-                                <circle cx="80" cy="80" fill="transparent" r="70" stroke="#222a3d" stroke-width="12">
-                                </circle>
-                                <circle cx="80" cy="80" fill="transparent" r="70" stroke="#58e7aa"
-                                    stroke-dasharray="440" stroke-dashoffset="110" stroke-linecap="round"
-                                    stroke-width="12"></circle>
-                                <circle cx="80" cy="80" fill="transparent" r="70" stroke="#d0bcff"
-                                    stroke-dasharray="440" stroke-dashoffset="380" stroke-linecap="round"
-                                    stroke-width="12"></circle>
-                            </svg>
+                            <div id="donut-chart" class="w-40 h-40 rounded-full transition-all duration-500"
+                                style="background: conic-gradient(#222a3d 0% 100%);"></div>
+                            <div class="absolute w-[136px] h-[136px] bg-surface-container-low rounded-full"></div>
                             <div class="absolute flex flex-col items-center">
-                                <span class="text-2xl font-black">74%</span>
-                                <span class="text-[10px] uppercase text-on-surface-variant font-bold">Equity</span>
+                                <span id="donut-center-text" class="text-2xl font-black">0%</span>
+                                <span class="text-[10px] uppercase text-on-surface-variant font-bold">Invested</span>
                             </div>
                         </div>
                         <div class="space-y-3">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-2">
                                     <div class="w-2 h-2 rounded-full bg-primary"></div>
-                                    <span class="text-xs text-on-surface-variant">Real Estate</span>
+                                    <span class="text-xs text-on-surface-variant">Assets</span>
                                 </div>
-                                <span class="text-xs font-bold">52%</span>
+                                <span id="pct-assets" class="text-xs font-bold">0%</span>
                             </div>
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-2">
                                     <div class="w-2 h-2 rounded-full bg-secondary"></div>
-                                    <span class="text-xs text-on-surface-variant">Public Equities</span>
+                                    <span class="text-xs text-on-surface-variant">Investments</span>
                                 </div>
-                                <span class="text-xs font-bold">22%</span>
+                                <span id="pct-investments" class="text-xs font-bold">0%</span>
                             </div>
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-2">
                                     <div class="w-2 h-2 rounded-full bg-surface-bright"></div>
-                                    <span class="text-xs text-on-surface-variant">Liquid Assets</span>
+                                    <span class="text-xs text-on-surface-variant">Liquid Cash</span>
                                 </div>
-                                <span class="text-xs font-bold">26%</span>
+                                <span id="pct-cash" class="text-xs font-bold">0%</span>
                             </div>
                         </div>
                     </div>
