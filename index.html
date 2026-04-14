@@ -356,52 +356,46 @@
             </section>
             <!-- Right: Quick Add Expense Sidebar -->
             <aside class="w-80 h-full">
-                <div
-                    class="bg-surface-container-high rounded-2xl p-6 h-full flex flex-col overflow-y-auto no-scrollbar shadow-2xl border-t border-white/5">
-                    <div class="flex items-center gap-4 mb-8">
-                        <div
-                            class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center text-secondary shrink-0">
-                            <span class="material-symbols-outlined text-3xl">payments</span>
-                        </div>
-                        <h3 class="text-4xl font-bold tracking-tight">Entry</h3>
-                    </div>
-                    <form class="space-y-6 flex-1">
-                        <div class="space-y-2">
-                            <label
-                                class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Amount</label>
-                            <div class="relative">
-                                <span
-                                    class="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-black text-xl">₹</span>
-                                <input
-                                    class="w-full bg-surface-container-highest border-none rounded-xl py-4 pl-10 pr-4 text-2xl font-black text-on-surface focus:ring-2 focus:ring-primary"
-                                    step="0.01" type="number" value="0.00" />
-                            </div>
-                        </div>
-                        <div class="space-y-2">
-                            <label
-                                class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Category</label>
-                            <select
-                                class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm font-bold text-on-surface focus:ring-1 focus:ring-primary appearance-none">
-                                <option>Fixed Expenses</option>
-                                <option>Variable Lifestyle</option>
-                                <option>Growth Investments</option>
-                                <option>Emergency Liquidity</option>
-                            </select>
-                        </div>
-                        <div class="space-y-2">
-                            <label
-                                class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Description</label>
-                            <input
-                                class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary placeholder-on-surface-variant/30"
-                                placeholder="e.g. Server hosting fee..." type="text" />
-                        </div>
-                    </form>
-                    <button
-                        class="mt-8 w-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-black py-4 rounded-xl shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all">
-                        RECORD TRANSACTION
-                    </button>
+    <div class="bg-surface-container-high rounded-2xl p-6 h-full flex flex-col overflow-y-auto no-scrollbar shadow-2xl border-t border-white/5">
+        <div class="flex items-center gap-4 mb-8">
+            <div class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center text-secondary shrink-0">
+                <span class="material-symbols-outlined text-3xl">payments</span>
+            </div>
+            <h3 class="text-4xl font-bold tracking-tight">Entry</h3>
+        </div>
+        
+        <form id="entry-form" class="space-y-6 flex-1">
+            <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Amount</label>
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-black text-xl">₹</span>
+                    <input id="tx-amount" class="w-full bg-surface-container-highest border-none rounded-xl py-4 pl-10 pr-4 text-2xl font-black text-on-surface focus:ring-2 focus:ring-primary" step="0.01" type="number" placeholder="0.00" required />
                 </div>
-            </aside>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Name / Payee</label>
+                <input id="tx-name" class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary placeholder-on-surface-variant/30" placeholder="e.g. Apple Store" type="text" required />
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Category</label>
+                <select id="tx-category" class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm font-bold text-on-surface focus:ring-1 focus:ring-primary appearance-none" required>
+                    <option value="" disabled selected>Loading categories...</option>
+                </select>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Description (Optional)</label>
+                <input id="tx-desc" class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary placeholder-on-surface-variant/30" placeholder="e.g. Server hosting fee..." type="text" />
+            </div>
+        </form>
+
+        <button id="btn-record" type="submit" form="entry-form" class="mt-8 w-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-black py-4 rounded-xl shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all">
+            RECORD TRANSACTION
+        </button>
+    </div>
+</aside>
         </div>
     </main>
     <!-- Contextual FAB (Only on relevant screens) -->
@@ -409,6 +403,7 @@
         class="fixed bottom-8 right-96 z-50 w-14 h-14 bg-primary text-on-primary rounded-full shadow-[0px_12px_32px_rgba(88,231,170,0.4)] flex items-center justify-center hover:scale-110 active:scale-90 transition-transform lg:hidden">
         <span class="material-symbols-outlined">add</span>
     </button>
+<script src="./pages/app.js"></script>
 </body>
 
 </html>

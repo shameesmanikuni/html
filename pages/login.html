@@ -197,10 +197,44 @@
                 isValid = false;
             }
 
-            // 5. The Grand Opening
+            // 5. The Grand Opening (Backend Integration)
             if (isValid) {
-                // Everything looks perfect. Let's go to the dashboard!
-                window.location.href = 'index.html';
+                const submitBtn = event.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<span>Authenticating...</span>';
+                submitBtn.disabled = true;
+
+                fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: emailValue,
+                        password: passwordValue
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        // Show backend error (e.g., Invalid credentials)
+                        passwordError.innerText = data.error;
+                        passwordError.classList.remove('hidden');
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    } else {
+                        // Success! Save the token and user data to localStorage
+                        localStorage.setItem('ledger_token', data.token);
+                        localStorage.setItem('ledger_user', JSON.stringify(data.user));
+                        
+                        // Redirect to dashboard
+                        window.location.href = 'index.html';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Server error. Make sure your backend is running.');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                });
             }
         });
     </script>

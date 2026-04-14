@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     user_id INT NOT NULL,
     category_id INT,
     transaction_type ENUM('expense', 'income') NOT NULL DEFAULT 'expense',
-    amount DECIMAL(12, 2) NOT NULL, -- Increased to 12,2 to handle millions safely
+    name VARCHAR(100) NOT NULL,  -- ADD THIS LINE
+    amount DECIMAL(12, 2) NOT NULL,
     transaction_date DATE NOT NULL,
     description VARCHAR(255),
     
@@ -66,6 +67,10 @@ INSERT IGNORE INTO categories (name) VALUES
 ('Food & Dining'), 
 ('Transportation'), 
 ('Shopping'), 
-('Housing & Utilities'), 
+('Utilities'), 
+('Rent'),
 ('Salary'), 
-('Entertainment');
+('Entertainment'),
+('Investment'),
+('Asset'),
+('Miscellaneous');
