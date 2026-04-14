@@ -5,23 +5,23 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css">
+    <script src="https://unpkg.com/nprogress@0.2.0/nprogress.js"></script>
+
+    <style>
+        /* Customizing the bar color to match your Primary Green */
+        #nprogress .bar {
+            background: #58e7aa !important;
+            height: 3px !important;
+        }
+
+        #nprogress .peg {
+            box-shadow: 0 0 10px #58e7aa, 0 0 5px #58e7aa !important;
+        }
+    </style>
     <title>The Ledger - Dashboard</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link rel="stylesheet" href="./pages/styles.css">
-
-    <style>
-        /* Chrome, Safari, Edge, Opera */
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        /* Firefox */
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
-    </style>
 
     <script id="tailwind-config">
         tailwind.config = {
@@ -131,7 +131,7 @@
             </a>
         </nav>
         <div class="mt-auto pt-6 border-t border-outline-variant/10">
-            <button
+            <button id="sidebar-add-btn"
                 class="w-full mb-4 bg-gradient-to-tr from-primary to-primary-container text-on-primary font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(88,231,170,0.2)] hover:scale-[1.02] active:scale-95 transition-transform">
                 <span class="material-symbols-outlined">add_circle</span>
                 Add Transaction
@@ -153,30 +153,27 @@
     </aside>
     <main class="ml-64 min-h-screen flex flex-col">
         <header
-            class="fixed top-0 right-0 left-64 z-40 h-16 bg-[#0b1326] backdrop-blur-xl bg-opacity-60 flex justify-between items-center px-8 shadow-[0px_12px_32px_rgba(6,14,32,0.4)]">
-            <div class="flex items-center gap-6 flex-1">
-                <div class="relative w-full max-w-md">
-                    <span
-                        class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl">search</span>
-                    <input
-                        class="w-full bg-surface-container-high border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-1 focus:ring-primary placeholder-on-surface-variant/50"
-                        placeholder="Search architecture..." type="text" />
-                </div>
-                <nav class="hidden md:flex items-center gap-6">
-                    <a class="text-[#58e7aa] font-bold border-b-2 border-[#58e7aa] pb-1 font-['Manrope'] text-on-surface tracking-tight"
-                        href="#">Overview</a>
-                    <a class="text-[#bbcbbb] font-medium font-['Manrope'] tracking-tight hover:text-primary transition-colors"
-                        href="#">Reports</a>
-                    <a class="text-[#bbcbbb] font-medium font-['Manrope'] tracking-tight hover:text-primary transition-colors"
-                        href="#">Assets</a>
-                </nav>
+            class="fixed top-0 right-0 left-64 z-40 h-20 bg-[#0b1326] backdrop-blur-xl bg-opacity-90 flex justify-between items-center px-8 shadow-sm border-b border-white/5">
+
+            <div>
+                <h2 class="text-2xl font-extrabold tracking-tight text-on-surface">Portfolio Overview</h2>
+                <p class="text-xs text-on-surface-variant mt-0.5">Financial structure health: <span id="health-status"
+                        class="text-primary font-bold">Optimized</span></p>
             </div>
+
             <div class="flex items-center gap-4">
-                <button
-                    class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#222a3d] transition-colors relative">
-                    <span class="material-symbols-outlined text-on-surface-variant">notifications</span>
-                    <span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full"></span>
-                </button>
+
+                <div class="hidden md:flex items-center gap-2 mr-4">
+                    <button
+                        class="px-4 py-2 bg-surface-container-high text-xs font-bold rounded-lg hover:bg-surface-bright transition-colors text-on-surface">Last
+                        30 Days</button>
+                    <button
+                        class="px-4 py-2 bg-surface-container-high text-xs font-bold rounded-lg hover:bg-surface-bright transition-colors text-on-surface">Export
+                        .CSV</button>
+                </div>
+
+                <div class="h-8 w-[1px] bg-outline-variant/20"></div>
+
                 <button
                     class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#222a3d] transition-colors">
                     <span class="material-symbols-outlined text-on-surface-variant">settings</span>
@@ -185,29 +182,13 @@
                 <div class="flex items-center gap-3">
                     <span class="text-sm font-bold text-on-surface">Architect Prime</span>
                     <img alt="User profile" class="w-10 h-10 rounded-full border-2 border-primary/20 p-0.5"
-                        data-alt="close-up portrait of a professional man in high-tech setting, soft cinematic lighting, professional corporate avatar"
                         src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCHWzgck-X8gZoSktaKjT_pTm7uXa6UXZ8NvzTVeW_hBlybC_DNkyYRnxpRQpMUGnRU5TOjCDKZOpUzi-TOwgEz2z_LbDHXchhCGoYB0iLO0oeGSlr2yJprpnP06MYHLxRFFze6GLxa_dE6x7fn5KpnE_BzGdrMzmF6v8v6rr-4Aw1txm_CWbbq1I-HlAhSHUJZSeDIn4dkmanyBKgCv9WaV5-WQhTZjQN0poZRaATv_USlFyZbGJB_2GjooBpHkda00QDGlDB3mzD" />
                 </div>
             </div>
         </header>
-        <div class="mt-16 p-8 flex gap-8 h-[calc(100vh-64px)] overflow-hidden">
-            <section class="flex-1 overflow-y-auto no-scrollbar pb-8">
-                <div class="flex justify-between items-end mb-8">
-                    <div>
-                        <h2 class="text-3xl font-extrabold tracking-tight text-on-surface">Portfolio Overview</h2>
-                        <p class="text-on-surface-variant">Financial structure health: <span id="health-status"
-                                class="text-primary font-bold">Optimized</span></p>
-                    </div>
-                    <div class="flex gap-3">
-                        <button
-                            class="px-4 py-2 bg-surface-container-high text-sm font-semibold rounded-lg hover:bg-surface-bright transition-colors">Last
-                            30 Days</button>
-                        <button
-                            class="px-4 py-2 bg-surface-container-high text-sm font-semibold rounded-lg hover:bg-surface-bright transition-colors">Export
-                            .CSV</button>
-                    </div>
-                </div>
-                <div class="grid grid-cols-12 gap-6 mb-8">
+        <div class="mt-20 p-5 flex gap-5 h-[calc(100vh-80px)] overflow-hidden">
+            <section class="flex-1 overflow-y-auto no-scrollbar pb-2">
+                <div class="grid grid-cols-12 gap-4 mb-4">
                     <div
                         class="col-span-12 lg:col-span-7 bg-surface-container-low rounded-xl p-8 relative overflow-hidden group">
                         <div
@@ -254,7 +235,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="grid grid-cols-12 gap-6">
+                <div class="grid grid-cols-12 gap-4">
                     <div class="col-span-12 lg:col-span-8 bg-surface-container-low rounded-xl p-6">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-bold">Recent Flux</h3>
@@ -304,14 +285,14 @@
             </section>
             <aside class="w-80 h-full">
                 <div
-                    class="bg-surface-container-high rounded-2xl p-6 h-full flex flex-col overflow-y-auto no-scrollbar shadow-2xl border-t border-white/5">
+                    class="bg-surface-container-high rounded-2xl p-5 h-full flex flex-col overflow-y-auto no-scrollbar shadow-2xl border-t border-white/5">
 
                     <div class="flex items-center gap-4 mb-4">
                         <div
                             class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center text-secondary shrink-0">
                             <span class="material-symbols-outlined text-3xl">payments</span>
                         </div>
-                        <h3 class="text-4xl font-bold tracking-tight">Entry</h3>
+                        <h3 class="text-3xl font-bold tracking-tight">New Entry</h3>
                     </div>
 
                     <div class="flex bg-surface-container-highest p-1 rounded-xl mb-4">
@@ -327,7 +308,7 @@
 
                     <input type="hidden" id="tx-type" value="expense">
 
-                    <form id="entry-form" class="space-y-6 flex-1">
+                    <form id="entry-form" class="space-y-4 flex-1">
                         <div class="space-y-2">
                             <label
                                 class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Amount</label>
@@ -381,6 +362,78 @@
         class="fixed bottom-8 right-96 z-50 w-14 h-14 bg-primary text-on-primary rounded-full shadow-[0px_12px_32px_rgba(88,231,170,0.4)] flex items-center justify-center hover:scale-110 active:scale-90 transition-transform lg:hidden">
         <span class="material-symbols-outlined">add</span>
     </button>
+    <div id="transaction-modal"
+        class="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center hidden p-4">
+        <div
+            class="bg-surface-container-high w-full max-w-md rounded-2xl p-6 shadow-2xl border-t border-white/5 relative animate-in fade-in zoom-in duration-200">
+
+            <div class="flex items-center gap-4 mb-4">
+                <div
+                    class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center text-secondary shrink-0">
+                    <span class="material-symbols-outlined text-3xl">payments</span>
+                </div>
+                <h3 class="text-3xl font-bold tracking-tight">New Entry</h3>
+            </div>
+
+            <div class="flex bg-surface-container-highest p-1 rounded-xl mb-4">
+                <button type="button" id="modal-type-expense" onclick="setTxType('expense', true)"
+                    class="flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-secondary text-on-secondary shadow-lg">
+                    EXPENSE
+                </button>
+                <button type="button" id="modal-type-income" onclick="setTxType('income', true)"
+                    class="flex-1 py-2 text-xs font-bold rounded-lg transition-all text-on-surface-variant hover:text-on-surface">
+                    INCOME
+                </button>
+            </div>
+
+            <input type="hidden" id="modal-tx-type" value="expense">
+
+            <form id="modal-entry-form" class="space-y-4">
+                <div class="space-y-2">
+                    <label
+                        class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Amount</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-black text-xl">₹</span>
+                        <input id="modal-tx-amount"
+                            class="w-full bg-surface-container-highest border-none rounded-xl py-4 pl-10 pr-4 text-2xl font-black text-on-surface focus:ring-2 focus:ring-primary"
+                            step="0.01" min="0" type="number" placeholder="0.00"
+                            onkeydown="if(event.key === '-') event.preventDefault();" required />
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Name /
+                        Payee</label>
+                    <input id="modal-tx-name"
+                        class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary placeholder-on-surface-variant/30"
+                        placeholder="e.g. Starbucks" type="text" required />
+                </div>
+
+                <div class="space-y-2">
+                    <label
+                        class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Category</label>
+                    <select id="modal-tx-category"
+                        class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm font-bold text-on-surface focus:ring-1 focus:ring-primary appearance-none"
+                        required>
+                        <option value="" disabled selected>Loading...</option>
+                    </select>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Description
+                        (Optional)</label>
+                    <input id="modal-tx-desc"
+                        class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary placeholder-on-surface-variant/30"
+                        placeholder="Coffee with friends..." type="text" />
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-black py-4 rounded-xl shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all mt-4">
+                    RECORD TRANSACTION
+                </button>
+            </form>
+        </div>
+    </div>
     <script src="./pages/app.js"></script>
 </body>
 

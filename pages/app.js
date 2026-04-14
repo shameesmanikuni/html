@@ -1,10 +1,8 @@
 // ==========================================
 // --- 0. DYNAMIC PATH CALCULATION ---
 // ==========================================
-// Check if we are currently inside the 'pages' directory
 const isInPagesFolder = window.location.pathname.includes('/pages/');
 const LOGIN_PAGE_URL = isInPagesFolder ? 'login.html' : 'pages/login.html';
-
 const API_URL = 'http://localhost:3000/api';
 
 // ==========================================
@@ -15,14 +13,13 @@ const userString = localStorage.getItem('ledger_user');
 
 let currentUser = null;
 let CURRENT_USER_ID = null;
+let allTransactions = []; // Global variable for instant search
 
-// If no token exists, kick the user out to the login page immediately
 if (!token || !userString) {
     window.location.replace(LOGIN_PAGE_URL);
 } else {
-    // Parse the real user data from the database
     currentUser = JSON.parse(userString);
-    CURRENT_USER_ID = currentUser.id; // <-- The Magic Line!
+    CURRENT_USER_ID = currentUser.id;
 }
 
 // ==========================================
@@ -36,114 +33,109 @@ function logoutUser(event) {
 }
 
 // ==========================================
-// --- 3. INITIALIZATION ON LOAD ---
+// --- 3. INITIALIZATION (Runs on Load & Page Swap) ---
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    // Only proceed with DOM manipulation if we are authenticated
+function initApp() {
     if (!currentUser) return;
 
-    // --- UI PERSONALIZATION ---
-    // Find the elements that say "Architect Prime" and replace with real username
-    const profileNames = document.querySelectorAll('.text-sm.font-bold.text-on-surface');
-    profileNames.forEach(nameEl => {
+    // 1. Personalize Profile
+    document.querySelectorAll('.text-sm.font-bold.text-on-surface').forEach(nameEl => {
         if (nameEl.innerText === 'Architect Prime') {
             nameEl.innerText = currentUser.username;
         }
     });
 
-    // Wire up all "Sign Out" buttons dynamically
-    const logoutLinks = document.querySelectorAll('a:has(.material-symbols-outlined)');
-    logoutLinks.forEach(link => {
+    // 2. Wire up Sign Out
+    document.querySelectorAll('a:has(.material-symbols-outlined)').forEach(link => {
         if (link.innerText.includes('Sign Out')) {
             link.addEventListener('click', logoutUser);
         }
     });
 
-    // --- INITIALIZE DATA ---
-    loadCategories();
-    setupFormHandler();
+    // 3. Wire up Modal Triggers
+    document.getElementById('sidebar-add-btn')?.addEventListener('click', openModal);
+    document.getElementById('content-add-btn')?.addEventListener('click', openModal);
+    
+    // 4. Close modal logic (Backdrop click)
+    document.getElementById('transaction-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'transaction-modal') closeModal();
+    });
 
-    // Load transactions only if the list container exists on the current page
+    // 5. Data Setup
+    loadCategories('tx-category');
+    loadCategories('modal-tx-category');
+    setupFormHandler('entry-form');
+    setupFormHandler('modal-entry-form');
+    
+    // Load the transactions (this also runs the dashboard math and renders the lists)
     loadTransactions();
+
+    // 6. Initialize Search & Navigation
+    setupSearch(); 
+    setupNavigation(); 
+}
+
+// Run setup when the page first loads
+document.addEventListener('DOMContentLoaded', initApp);
+
+// Handle the browser "Back" button smoothly
+window.addEventListener('popstate', () => {
+    navigateTo(window.location.pathname);
+});
+
+// ESCAPE Key Global Listener to close modal
+document.addEventListener('keydown', (event) => {
+    if (event.key === "Escape") closeModal();
 });
 
 
 // ==========================================
-// --- 4. API & DATA FUNCTIONS ---
+// --- 4. DATA & API FUNCTIONS ---
 // ==========================================
+async function loadCategories(selectId) {
+    const categorySelect = document.getElementById(selectId);
+    if (!categorySelect) return;
 
-// Fetch categories from your MySQL database
-async function loadCategories() {
     try {
         const response = await fetch(`${API_URL}/categories`);
         const categories = await response.json();
-
-        const categorySelect = document.getElementById('tx-category');
-        if (!categorySelect) return; // Guard clause if we aren't on the dashboard
-
-        // Clear the "Loading..." text
+        
         categorySelect.innerHTML = '<option value="" disabled selected>Select a category</option>';
-
-        // Populate with real DB data
         categories.forEach(cat => {
             const option = document.createElement('option');
             option.value = cat.id;
-            option.textContent = cat.name;
+            option.textContent = cat.name; 
             categorySelect.appendChild(option);
         });
     } catch (error) {
-        console.error('Failed to load categories:', error);
-        const categorySelect = document.getElementById('tx-category');
-        if (categorySelect) {
-            categorySelect.innerHTML = '<option value="" disabled>API Offline</option>';
-        }
+        categorySelect.innerHTML = '<option value="" disabled>API Offline</option>';
     }
 }
 
-// Handle the "Record Transaction" Form Submission
-function setupFormHandler() {
-    const form = document.getElementById('entry-form');
-    if (!form) return;
-
+function setupFormHandler(formId) {
+    const form = document.getElementById(formId);
+    if (!form) return; 
+    
     form.addEventListener('submit', async (e) => {
-        e.preventDefault(); // Stop the page from reloading!
-
-        // Let's add a quick loading state to the button
-        const submitBtn = document.getElementById('btn-record');
+        e.preventDefault();
+        
+        const prefix = formId.includes('modal') ? 'modal-' : '';
+        const submitBtn = form.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerText;
+        
         submitBtn.innerText = 'RECORDING...';
         submitBtn.disabled = true;
 
-        // 1. Grab all the values from your HTML inputs
-        const amountVal = parseFloat(document.getElementById('tx-amount').value);
-        const name = document.getElementById('tx-name').value;
-        const categoryId = document.getElementById('tx-category').value;
-        const description = document.getElementById('tx-desc').value || null;
-
-        // Date to TODAY, and type from the hidden input.
-        const transactionDate = new Date().toISOString().split('T')[0];
-        const transactionType = document.getElementById('tx-type').value;
-
-        // 2. Validate
-        if (!categoryId) {
-            alert('Please select a category.');
-            submitBtn.innerText = originalText;
-            submitBtn.disabled = false;
-            return;
-        }
-
-        // 3. Package the data for the server
         const payload = {
-            user_id: CURRENT_USER_ID, // Our secure, logged-in user ID!
-            category_id: categoryId,
-            transaction_type: transactionType,
-            name: name,
-            amount: amountVal,
-            transaction_date: transactionDate,
-            description: description
+            user_id: CURRENT_USER_ID,
+            category_id: document.getElementById(`${prefix}tx-category`).value,
+            transaction_type: document.getElementById(`${prefix}tx-type`).value, 
+            name: document.getElementById(`${prefix}tx-name`).value,
+            amount: parseFloat(document.getElementById(`${prefix}tx-amount`).value),
+            transaction_date: new Date().toISOString().split('T')[0],
+            description: document.getElementById(`${prefix}tx-desc`).value || null
         };
 
-        // 4. Send to the database
         try {
             const response = await fetch(`${API_URL}/transactions`, {
                 method: 'POST',
@@ -152,237 +144,164 @@ function setupFormHandler() {
             });
 
             if (response.ok) {
-                // Success! Clear the form.
-                form.reset();
-                document.getElementById('tx-category').value = "";
-
-                // If we are on the dashboard, instantly reload the transaction list
-                if (typeof loadTransactions === 'function') {
-                    loadTransactions();
-                }
+                form.reset(); 
+                if (prefix === 'modal-') closeModal();
+                loadTransactions(); 
             } else {
-                const errorData = await response.json();
-                alert(`Error saving to database: ${errorData.error}`);
+                alert('Error recording transaction');
             }
         } catch (error) {
-            console.error('Failed to save transaction:', error);
-            alert('Cannot reach the server.');
+            alert('Cannot reach server');
         } finally {
-            // Restore the button
             submitBtn.innerText = originalText;
             submitBtn.disabled = false;
         }
     });
 }
 
-// Render the Transaction List
-// Render the Transaction List (Full Page View)
 async function loadTransactions() {
     try {
         const response = await fetch(`${API_URL}/transactions?user_id=${CURRENT_USER_ID}`);
-        const transactions = await response.json();
+        let transactions = await response.json();
         
-        // 1. ALWAYS run the math (this fills the top boxes on this page!)
-        if (typeof updateDashboardStats === 'function') {
-            updateDashboardStats(transactions);
-        }
+        // SORT DESCENDING (Newest First)
+        transactions.sort((a, b) => new Date(b.created_at || b.transaction_date) - new Date(a.created_at || a.transaction_date));
+
+        // Save to our global array for instant searching
+        allTransactions = transactions;
         
-        // 2. ONLY draw the list if the container exists on this page
-        const list = document.getElementById('transaction-list'); 
-        if (!list) return; 
-
-        if (transactions.length === 0) {
-            list.innerHTML = '<p class="text-center text-on-surface-variant p-8 font-bold">No transactions found in the ledger.</p>';
-            return;
-        }
-
-        list.innerHTML = transactions.map(t => {
-            const isExpense = t.transaction_type === 'expense';
-            const colorClass = isExpense ? 'text-error' : 'text-primary';
-            const sign = isExpense ? '-' : '+';
-            
-            // Get our custom icon and background color from the Phase 2 function
-            const style = getCategoryIcon(t.category_name);
-
-            // Add the description if it exists
-            const descHtml = t.description ? `<span class="opacity-75"> • ${t.description}</span>` : '';
-
-            // --- THE DATE & TIME FIX ---
-            // We use 'created_at' because it holds the exact timestamp, falling back to transaction_date just in case
-            const dateObj = new Date(t.created_at || t.transaction_date);
-            const formattedDate = dateObj.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
-            // Format the exact time (e.g., 02:14 PM)
-            const formattedTime = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-            
-            const formattedAmount = parseFloat(t.amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-
-            // Notice we completely removed the badgebg logic and the Settled span!
-            return `
-                <div class="group flex items-center justify-between p-4 md:p-6 bg-surface-container-low hover:bg-surface-container-high rounded-2xl transition-all duration-300 border border-transparent hover:border-outline-variant/15">
-                    <div class="flex items-center gap-5">
-                        <div class="w-12 h-12 rounded-xl ${style.color} flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                            <span class="material-symbols-outlined">${style.icon}</span>
-                        </div>
-                        <div>
-                            <p class="text-on-surface text-lg font-bold">${t.name}</p>
-                            <p class="text-on-surface-variant text-sm">${t.category_name} ${descHtml} • ${formattedDate} at ${formattedTime}</p>
-                        </div>
-                    </div>
-                    <div class="text-right flex flex-col justify-center h-full">
-                        <p class="text-xl font-bold ${colorClass}">${sign}₹${formattedAmount}</p>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        // Calculate math for dashboard/header stats
+        updateDashboardStats(allTransactions);
+        
+        // Draw the full list to the screen
+        renderTransactionList(allTransactions);
+        
     } catch (err) {
         console.error("Error loading transactions:", err);
     }
 }
 
-// --- TOGGLE LOGIC ---
-function setTxType(type) {
-    const expenseBtn = document.getElementById('type-expense');
-    const incomeBtn = document.getElementById('type-income');
-    const typeInput = document.getElementById('tx-type');
+function renderTransactionList(transactionsToRender) {
+    const list = document.getElementById('transaction-list'); 
+    if (!list) return; 
 
-    typeInput.value = type;
-
-    if (type === 'expense') {
-        expenseBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-secondary text-on-secondary shadow-lg";
-        incomeBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all text-on-surface-variant hover:text-on-surface";
-    } else {
-        incomeBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-primary text-on-primary shadow-lg";
-        expenseBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all text-on-surface-variant hover:text-on-surface";
+    if (transactionsToRender.length === 0) {
+        list.innerHTML = '<p class="text-center text-on-surface-variant p-8 font-bold">No transactions found.</p>';
+        return;
     }
+
+    list.innerHTML = transactionsToRender.map(t => {
+        const isExpense = t.transaction_type === 'expense';
+        const colorClass = isExpense ? 'text-error' : 'text-primary';
+        const sign = isExpense ? '-' : '+';
+        const style = getCategoryIcon(t.category_name);
+        const descHtml = t.description ? `<span class="opacity-75"> • ${t.description}</span>` : '';
+
+        const dateObj = new Date(t.created_at || t.transaction_date);
+        const formattedDate = dateObj.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+        const formattedTime = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+        const formattedAmount = parseFloat(t.amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        return `
+            <div class="group flex items-center justify-between p-4 md:p-6 bg-surface-container-low hover:bg-surface-container-high rounded-2xl transition-all duration-300 border border-transparent hover:border-outline-variant/15">
+                <div class="flex items-center gap-5">
+                    <div class="w-12 h-12 rounded-xl ${style.color} flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                        <span class="material-symbols-outlined">${style.icon}</span>
+                    </div>
+                    <div>
+                        <p class="text-on-surface text-lg font-bold">${t.name}</p>
+                        <p class="text-on-surface-variant text-sm">${t.category_name} ${descHtml} • ${formattedDate} at ${formattedTime}</p>
+                    </div>
+                </div>
+                <div class="text-right flex flex-col justify-center h-full">
+                    <p class="text-xl font-bold ${colorClass}">${sign}₹${formattedAmount}</p>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
-// --- DASHBOARD MATH LOGIC ---
-// --- DASHBOARD MATH LOGIC ---
-function updateDashboardStats(transactions) {
-    let totalIncome = 0;
-    let totalExpense = 0;
-    let totalAssets = 0;
-    let totalInvestments = 0;
+// 3. THE INSTANT SEARCH FUNCTION
+function setupSearch() {
+    const searchInput = document.getElementById('tx-search');
+    if (!searchInput) return;
 
-    // 1. Loop through and sum everything up
+    searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        
+        const filteredData = allTransactions.filter(t => {
+            // Safely handle descriptions that might be null/empty
+            const safeDesc = t.description ? t.description.toLowerCase() : "";
+
+            return t.name.toLowerCase().includes(searchTerm) || 
+                   t.category_name.toLowerCase().includes(searchTerm) ||
+                   t.amount.toString().includes(searchTerm) ||
+                   safeDesc.includes(searchTerm); // <-- Now it searches descriptions safely!
+        });
+
+        renderTransactionList(filteredData);
+    });
+}
+
+// ==========================================
+// --- 5. DASHBOARD UI LOGIC ---
+// ==========================================
+function updateDashboardStats(transactions) {
+    let totalIncome = 0, totalExpense = 0, totalAssets = 0, totalInvestments = 0;
+
     transactions.forEach(t => {
         const amount = parseFloat(t.amount);
+        if (t.transaction_type === 'income') totalIncome += amount;
+        else totalExpense += amount;
 
-        // Core Income/Expense
-        if (t.transaction_type === 'income') {
-            totalIncome += amount;
-        } else if (t.transaction_type === 'expense') {
-            totalExpense += amount;
-        }
-
-        // Specific Categories (Assets & Investments)
-        // Specific Categories (Assets & Investments)
         if (t.category_name === 'Asset') {
-            if (t.transaction_type === 'expense') {
-                totalAssets += amount; // Buying an asset INCREASES your asset total
-            } else if (t.transaction_type === 'income') {
-                totalAssets -= amount; // Selling an asset DECREASES your asset total
-            }
+            totalAssets += (t.transaction_type === 'expense' ? amount : -amount);
         } else if (t.category_name === 'Investment') {
-            if (t.transaction_type === 'expense') {
-                totalInvestments += amount; // Buying an investment INCREASES your investment total
-            } else if (t.transaction_type === 'income') {
-                totalInvestments -= amount; // Selling an investment DECREASES your investment total
-            }
+            totalInvestments += (t.transaction_type === 'expense' ? amount : -amount);
         }
     });
 
     const netBalance = totalIncome - totalExpense;
 
-    // 2. PERCENTAGE LOGIC (Compared to state before the last transaction)
-    let percentageText = "0.0%";
-    let isPositive = true;
-
+    let percentageText = "0.0%", isPositiveChange = true;
     if (transactions.length > 0) {
-        // Because of your SQL ORDER BY date DESC, index 0 is the most recent
-        const latestTx = transactions[0]; 
-        const latestAmount = parseFloat(latestTx.amount);
-        
-        // Did the last transaction add to or subtract from our net?
-        const impact = latestTx.transaction_type === 'income' ? latestAmount : -latestAmount;
-        
-        // What was our balance before this transaction?
+        const latestTx = transactions[0];
+        const impact = latestTx.transaction_type === 'income' ? parseFloat(latestTx.amount) : -parseFloat(latestTx.amount);
         const previousBalance = netBalance - impact;
-
         if (previousBalance !== 0) {
-            // Calculate percentage change
-            const percentChange = (impact / Math.abs(previousBalance)) * 100;
-            isPositive = percentChange >= 0;
-            percentageText = (isPositive ? '+' : '') + percentChange.toFixed(1) + '%';
-        } else {
-            // Edge case: If previous balance was 0, it's technically a 100% gain/loss
-            isPositive = impact >= 0;
-            percentageText = (isPositive ? '+' : '') + '100.0%';
+            const percent = (impact / Math.abs(previousBalance)) * 100;
+            isPositiveChange = percent >= 0;
+            percentageText = (isPositiveChange ? '+' : '') + percent.toFixed(1) + '%';
         }
     }
 
-    // 3. Formatting
-    const formatCash = (num) => '₹' + num.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const format = (num) => '₹' + num.toLocaleString('en-IN', {minimumFractionDigits: 2});
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 
-    // 4. Update the DOM
-    const elNet = document.getElementById('stat-net');
-    const elIncome = document.getElementById('stat-income');
-    const elExpense = document.getElementById('stat-expense');
-    const elAssets = document.getElementById('stat-assets');
-    const elInvestments = document.getElementById('stat-investments');
-    const elPercentage = document.getElementById('stat-percentage');
+    setEl('stat-net', format(netBalance));
+    setEl('stat-income', format(totalIncome));
+    setEl('stat-expense', format(totalExpense));
+    setEl('stat-assets', format(totalAssets));
+    setEl('stat-investments', format(totalInvestments));
+
+    const elPct = document.getElementById('stat-percentage');
+    if (elPct) {
+        elPct.innerText = percentageText;
+        elPct.className = `text-sm font-bold px-2 py-0.5 rounded ${isPositiveChange ? 'text-primary bg-primary/10' : 'text-error bg-error/10'}`;
+    }
+
     const elHealth = document.getElementById('health-status');
-
-    if (elNet) elNet.innerText = formatCash(netBalance);
-    if (elIncome) elIncome.innerText = formatCash(totalIncome);
-    if (elExpense) elExpense.innerText = formatCash(totalExpense);
-    if (elAssets) elAssets.innerText = formatCash(totalAssets);
-    if (elInvestments) elInvestments.innerText = formatCash(totalInvestments);
-    
-    // Dynamically color the percentage badge (Green for +, Red for -)
-    if (elPercentage) {
-        elPercentage.innerText = percentageText;
-        if (isPositive) {
-            elPercentage.className = "text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded";
-        } else {
-            elPercentage.className = "text-sm font-bold text-error bg-error/10 px-2 py-0.5 rounded"; 
-        }
-    }
-
     if (elHealth) {
-        if (netBalance >= 0) {
-            elHealth.innerText = "Optimized";
-            elHealth.className = "text-primary font-bold";
-        } else {
-            elHealth.innerText = "Unhealthy"; // You can change this to "Unhealthy" if you prefer!
-            elHealth.className = "text-error font-bold animate-pulse"; // Added a red pulse effect for warnings!
-        }
+        elHealth.innerText = netBalance >= 0 ? "Optimized" : "Critical Risk";
+        elHealth.className = netBalance >= 0 ? "text-primary font-bold" : "text-error font-bold animate-pulse";
     }
 
-    // (This goes at the bottom of updateDashboardStats)
-    // ...
-    // ... previous code ...
-    if (elPercentage) {
-        elPercentage.innerText = percentageText;
-        if (isPositive) {
-            elPercentage.className = "text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded";
-        } else {
-            elPercentage.className = "text-sm font-bold text-error bg-error/10 px-2 py-0.5 rounded"; 
-        }
-    }
-
-    // ADD THESE TWO LINES HERE!
     renderRecentFlux(transactions);
     renderStructuralBreakdown(netBalance, totalAssets, totalInvestments);
 }
 
-// ==========================================
-// --- 5. UI GENERATION HELPERS ---
-// ==========================================
-
-// Maps categories to specific icons and colors
-function getCategoryIcon(categoryName) {
-    const icons = {
+function getCategoryIcon(name) {
+    const map = {
         'Food & Dining': { icon: 'restaurant', color: 'text-tertiary bg-tertiary/20' },
         'Transportation': { icon: 'directions_car', color: 'text-on-surface bg-surface-bright' },
         'Shopping': { icon: 'shopping_bag', color: 'text-primary bg-primary/20' },
@@ -391,99 +310,110 @@ function getCategoryIcon(categoryName) {
         'Salary': { icon: 'payments', color: 'text-primary bg-primary/20' },
         'Entertainment': { icon: 'movie', color: 'text-secondary bg-secondary/20' },
         'Investment': { icon: 'trending_up', color: 'text-primary bg-primary/20' },
-        'Asset': { icon: 'real_estate_agent', color: 'text-secondary bg-secondary/20' },
-        'Miscellaneous': { icon: 'category', color: 'text-on-surface bg-surface-bright' }
+        'Asset': { icon: 'real_estate_agent', color: 'text-secondary bg-secondary/20' }
     };
-    // Fallback if they make a custom category
-    return icons[categoryName] || { icon: 'receipt_long', color: 'text-on-surface bg-surface-bright' }; 
+    return map[name] || { icon: 'category', color: 'text-on-surface bg-surface-bright' };
 }
 
-// Renders the 4 most recent transactions on the dashboard
 function renderRecentFlux(transactions) {
     const container = document.getElementById('recent-flux-list');
-    if (!container) return; // Skip if not on dashboard
+    if (!container) return;
 
-    // Grab only the first 4 transactions
     const recent = transactions.slice(0, 4);
-
     if (recent.length === 0) {
-        container.innerHTML = '<p class="text-sm text-center text-on-surface-variant p-4">No recent transactions to display.</p>';
+        container.innerHTML = '<p class="text-sm text-center text-on-surface-variant p-4">Clean slate.</p>';
         return;
     }
 
     container.innerHTML = recent.map(t => {
-        const style = getCategoryIcon(t.category_name);
-        const isExpense = t.transaction_type === 'expense';
-        const sign = isExpense ? '-' : '+';
-        const colorClass = isExpense ? 'text-error' : 'text-primary';
-        
-        const dateObj = new Date(t.transaction_date);
-        const timeStr = dateObj.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
-
+        const s = getCategoryIcon(t.category_name);
+        const isExp = t.transaction_type === 'expense';
         return `
             <div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-high transition-colors">
                 <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-full ${style.color} flex items-center justify-center">
-                        <span class="material-symbols-outlined">${style.icon}</span>
-                    </div>
-                    <div>
-                        <p class="font-bold text-sm truncate w-48">${t.name}</p>
-                        <p class="text-xs text-on-surface-variant">${t.category_name} • ${timeStr}</p>
-                    </div>
+                    <div class="w-10 h-10 rounded-full ${s.color} flex items-center justify-center"><span class="material-symbols-outlined">${s.icon}</span></div>
+                    <div><p class="font-bold text-sm truncate w-40">${t.name}</p><p class="text-xs text-on-surface-variant">${t.category_name}</p></div>
                 </div>
-                <p class="font-bold ${colorClass}">${sign}₹${parseFloat(t.amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-            </div>
-        `;
+                <p class="font-bold ${isExp ? 'text-error' : 'text-primary'}">${isExp ? '-' : '+'}₹${parseFloat(t.amount).toLocaleString('en-IN')}</p>
+            </div>`;
     }).join('');
 }
 
-// Calculates and draws the Donut Chart
 function renderStructuralBreakdown(cash, assets, investments) {
     const elDonut = document.getElementById('donut-chart');
-    if (!elDonut) return; // Skip if not on dashboard
+    if (!elDonut) return;
 
-    // Prevent negative numbers from breaking the pie chart geometry
-    const safeCash = Math.max(0, cash);
-    const safeAssets = Math.max(0, assets);
-    const safeInvestments = Math.max(0, investments);
-    const total = safeCash + safeAssets + safeInvestments;
-
-    const elAssets = document.getElementById('pct-assets');
-    const elInvestments = document.getElementById('pct-investments');
-    const elCash = document.getElementById('pct-cash');
-    const elCenter = document.getElementById('donut-center-text');
+    const sC = Math.max(0, cash), sA = Math.max(0, assets), sI = Math.max(0, investments);
+    const total = sC + sA + sI;
 
     if (total === 0) {
-        // Reset to empty state if they have no money logged
         elDonut.style.background = 'conic-gradient(#222a3d 0% 100%)';
-        if (elAssets) elAssets.innerText = '0%';
-        if (elInvestments) elInvestments.innerText = '0%';
-        if (elCash) elCash.innerText = '0%';
-        if (elCenter) elCenter.innerText = '0%';
         return;
     }
 
-    // Calculate Percentages
-    const pctA = (safeAssets / total) * 100;
-    const pctI = (safeInvestments / total) * 100;
-    const pctC = (safeCash / total) * 100;
+    const pA = (sA / total) * 100, pI = (sI / total) * 100;
+    const setPct = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = Math.round(val) + '%'; };
 
-    // Update the HTML text
-    if (elAssets) elAssets.innerText = Math.round(pctA) + '%';
-    if (elInvestments) elInvestments.innerText = Math.round(pctI) + '%';
-    if (elCash) elCash.innerText = Math.round(pctC) + '%';
-    
-    // The center shows total percentage of wealth safely "Invested" (Assets + Investments)
-    const totalInvested = Math.round(pctA + pctI);
-    if (elCenter) elCenter.innerText = totalInvested + '%';
+    setPct('pct-assets', pA); setPct('pct-investments', pI); setPct('pct-cash', (sC / total) * 100);
+    setPct('donut-center-text', pA + pI);
 
-    // Draw the CSS Pie Chart!
-    const point1 = pctA;
-    const point2 = pctA + pctI;
+    elDonut.style.background = `conic-gradient(#58e7aa 0% ${pA}%, #d0bcff ${pA}% ${pA + pI}%, #31394d ${pA + pI}% 100%)`;
+}
+
+// ==========================================
+// --- 6. MODAL CONTROL ---
+// ==========================================
+function openModal() { document.getElementById('transaction-modal')?.classList.remove('hidden'); }
+function closeModal() { document.getElementById('transaction-modal')?.classList.add('hidden'); }
+
+function setTxType(type, isModal = false) {
+    const prefix = isModal ? 'modal-' : '';
+    document.getElementById(`${prefix}tx-type`).value = type;
+    const isExp = type === 'expense';
     
-    elDonut.style.background = `conic-gradient(
-        #58e7aa 0% ${point1}%, 
-        #d0bcff ${point1}% ${point2}%, 
-        #31394d ${point2}% 100%
-    )`;
+    document.getElementById(`${prefix}type-expense`).className = isExp ? "flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-secondary text-on-secondary shadow-lg" : "flex-1 py-2 text-xs font-bold rounded-lg transition-all text-on-surface-variant hover:text-on-surface";
+    document.getElementById(`${prefix}type-income`).className = !isExp ? "flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-primary text-on-primary shadow-lg" : "flex-1 py-2 text-xs font-bold rounded-lg transition-all text-on-surface-variant hover:text-on-surface";
+}
+
+// ==========================================
+// --- 7. SPA ROUTER (Smooth Page Swapping) ---
+// ==========================================
+async function navigateTo(url) {
+    NProgress.start(); 
+    
+    try {
+        const response = await fetch(url);
+        const html = await response.text();
+        
+        const parser = new DOMParser();
+        const newDoc = parser.parseFromString(html, 'text/html');
+        const newMain = newDoc.querySelector('main').innerHTML;
+        
+        document.querySelector('main').innerHTML = newMain;
+        window.history.pushState({}, '', url);
+        
+        initApp(); // Re-wire everything!
+        
+    } catch (error) {
+        console.error("Navigation failed:", error);
+        window.location.href = url; 
+    }
+    
+    NProgress.done(); 
+}
+
+function setupNavigation() {
+    document.querySelectorAll('aside nav a, aside .flex-1 a').forEach(link => {
+        // Remove old listeners to prevent duplicates during SPA navigation
+        const newLink = link.cloneNode(true);
+        link.parentNode.replaceChild(newLink, link);
+        
+        newLink.addEventListener('click', (e) => {
+            const url = newLink.getAttribute('href');
+            if (url && url !== '#' && !url.includes('logout')) {
+                e.preventDefault();
+                navigateTo(url);
+            }
+        });
+    });
 }
