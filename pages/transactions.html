@@ -224,7 +224,7 @@
                     <h1 class="text-2xl font-extrabold text-on-surface mb-1">Ledger History</h1>
                 </div>
                 <div class="flex gap-3">
-                    <button
+                    <button id="btn-open-filter"
                         class="bg-surface-container-highest px-4 py-2.5 rounded-lg text-sm font-bold text-on-surface hover:bg-surface-bright transition-colors flex items-center gap-2 border border-outline-variant/15">
                         <span class="material-symbols-outlined text-lg">filter_list</span>
                         Filter
@@ -314,6 +314,64 @@
             </form>
         </div>
     </div>
+    <div id="filter-modal" class="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center hidden p-4">
+    <div class="bg-surface-container-high w-full max-w-md rounded-2xl p-6 shadow-2xl border-t border-white/5 relative animate-in fade-in zoom-in duration-200">
+        
+        <div class="flex items-center gap-4 mb-6">
+            <div class="w-10 h-10 rounded-lg bg-surface-bright flex items-center justify-center text-on-surface shrink-0">
+                <span class="material-symbols-outlined text-3xl">tune</span>
+            </div>
+            <h3 class="text-2xl font-bold tracking-tight">Filter Ledger</h3>
+        </div>
+
+        <form id="filter-form" class="space-y-4">
+            
+            <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Category</label>
+                <select id="filter-category" class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm font-bold text-on-surface focus:ring-1 focus:ring-primary appearance-none">
+                    <option value="all" selected>All Categories</option>
+                    </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">From Date</label>
+                    <input id="filter-date-start" type="date" class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary [color-scheme:dark]" />
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">To Date</label>
+                    <input id="filter-date-end" type="date" class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary [color-scheme:dark]" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Min Amount</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">₹</span>
+                        <input id="filter-min-amount" type="number" placeholder="0" class="w-full bg-surface-container-highest border-none rounded-xl py-3 pl-8 pr-4 text-sm focus:ring-1 focus:ring-primary" />
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Max Amount</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">₹</span>
+                        <input id="filter-max-amount" type="number" placeholder="Any" class="w-full bg-surface-container-highest border-none rounded-xl py-3 pl-8 pr-4 text-sm focus:ring-1 focus:ring-primary" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+                <button type="button" id="btn-clear-filters" class="flex-1 bg-surface-container-highest text-on-surface font-bold py-3 rounded-xl hover:bg-surface-bright transition-colors">
+                    Clear
+                </button>
+                <button type="submit" class="flex-[2] bg-primary text-on-primary font-black py-3 rounded-xl shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all">
+                    Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 </body>
 
 </html>

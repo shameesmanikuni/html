@@ -55,7 +55,12 @@ function initApp() {
     // 3. Wire up Modal Triggers
     document.getElementById('sidebar-add-btn')?.addEventListener('click', openModal);
     document.getElementById('content-add-btn')?.addEventListener('click', openModal);
-    
+
+    document.getElementById('btn-open-filter')?.addEventListener('click', openFilterModal);
+    document.getElementById('filter-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'filter-modal') closeFilterModal();
+    });
+
     // 4. Close modal logic (Backdrop click)
     document.getElementById('transaction-modal')?.addEventListener('click', (e) => {
         if (e.target.id === 'transaction-modal') closeModal();
@@ -64,15 +69,17 @@ function initApp() {
     // 5. Data Setup
     loadCategories('tx-category');
     loadCategories('modal-tx-category');
+    loadCategories('filter-category', true);
     setupFormHandler('entry-form');
     setupFormHandler('modal-entry-form');
-    
+
     // Load the transactions (this also runs the dashboard math and renders the lists)
     loadTransactions();
 
     // 6. Initialize Search & Navigation
-    setupSearch(); 
-    setupNavigation(); 
+    setupSearch();
+    setupNavigation();
+    setupFilterHandler();
 }
 
 // Run setup when the page first loads
@@ -92,7 +99,8 @@ document.addEventListener('keydown', (event) => {
 // ==========================================
 // --- 4. DATA & API FUNCTIONS ---
 // ==========================================
-async function loadCategories(selectId) {
+// Replace your existing loadCategories with this slightly updated one:
+async function loadCategories(selectId, isFilter = false) {
     const categorySelect = document.getElementById(selectId);
     if (!categorySelect) return;
 
@@ -100,7 +108,11 @@ async function loadCategories(selectId) {
         const response = await fetch(`${API_URL}/categories`);
         const categories = await response.json();
         
-        categorySelect.innerHTML = '<option value="" disabled selected>Select a category</option>';
+        // If it's the filter, keep the "All Categories" option. Otherwise, make it a disabled placeholder.
+        categorySelect.innerHTML = isFilter 
+            ? '<option value="all" selected>All Categories</option>' 
+            : '<option value="" disabled selected>Select a category</option>';
+
         categories.forEach(cat => {
             const option = document.createElement('option');
             option.value = cat.id;
@@ -114,22 +126,22 @@ async function loadCategories(selectId) {
 
 function setupFormHandler(formId) {
     const form = document.getElementById(formId);
-    if (!form) return; 
-    
+    if (!form) return;
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const prefix = formId.includes('modal') ? 'modal-' : '';
         const submitBtn = form.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerText;
-        
+
         submitBtn.innerText = 'RECORDING...';
         submitBtn.disabled = true;
 
         const payload = {
             user_id: CURRENT_USER_ID,
             category_id: document.getElementById(`${prefix}tx-category`).value,
-            transaction_type: document.getElementById(`${prefix}tx-type`).value, 
+            transaction_type: document.getElementById(`${prefix}tx-type`).value,
             name: document.getElementById(`${prefix}tx-name`).value,
             amount: parseFloat(document.getElementById(`${prefix}tx-amount`).value),
             transaction_date: new Date().toISOString().split('T')[0],
@@ -144,9 +156,9 @@ function setupFormHandler(formId) {
             });
 
             if (response.ok) {
-                form.reset(); 
+                form.reset();
                 if (prefix === 'modal-') closeModal();
-                loadTransactions(); 
+                loadTransactions();
             } else {
                 alert('Error recording transaction');
             }
@@ -163,27 +175,27 @@ async function loadTransactions() {
     try {
         const response = await fetch(`${API_URL}/transactions?user_id=${CURRENT_USER_ID}`);
         let transactions = await response.json();
-        
+
         // SORT DESCENDING (Newest First)
         transactions.sort((a, b) => new Date(b.created_at || b.transaction_date) - new Date(a.created_at || a.transaction_date));
 
         // Save to our global array for instant searching
         allTransactions = transactions;
-        
+
         // Calculate math for dashboard/header stats
         updateDashboardStats(allTransactions);
-        
+
         // Draw the full list to the screen
         renderTransactionList(allTransactions);
-        
+
     } catch (err) {
         console.error("Error loading transactions:", err);
     }
 }
 
 function renderTransactionList(transactionsToRender) {
-    const list = document.getElementById('transaction-list'); 
-    if (!list) return; 
+    const list = document.getElementById('transaction-list');
+    if (!list) return;
 
     if (transactionsToRender.length === 0) {
         list.innerHTML = '<p class="text-center text-on-surface-variant p-8 font-bold">No transactions found.</p>';
@@ -200,7 +212,7 @@ function renderTransactionList(transactionsToRender) {
         const dateObj = new Date(t.created_at || t.transaction_date);
         const formattedDate = dateObj.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
         const formattedTime = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-        const formattedAmount = parseFloat(t.amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const formattedAmount = parseFloat(t.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         return `
             <div class="group flex items-center justify-between p-4 md:p-6 bg-surface-container-low hover:bg-surface-container-high rounded-2xl transition-all duration-300 border border-transparent hover:border-outline-variant/15">
@@ -228,15 +240,15 @@ function setupSearch() {
 
     searchInput.addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase();
-        
+
         const filteredData = allTransactions.filter(t => {
             // Safely handle descriptions that might be null/empty
             const safeDesc = t.description ? t.description.toLowerCase() : "";
 
-            return t.name.toLowerCase().includes(searchTerm) || 
-                   t.category_name.toLowerCase().includes(searchTerm) ||
-                   t.amount.toString().includes(searchTerm) ||
-                   safeDesc.includes(searchTerm); // <-- Now it searches descriptions safely!
+            return t.name.toLowerCase().includes(searchTerm) ||
+                t.category_name.toLowerCase().includes(searchTerm) ||
+                t.amount.toString().includes(searchTerm) ||
+                safeDesc.includes(searchTerm); // <-- Now it searches descriptions safely!
         });
 
         renderTransactionList(filteredData);
@@ -275,7 +287,7 @@ function updateDashboardStats(transactions) {
         }
     }
 
-    const format = (num) => '₹' + num.toLocaleString('en-IN', {minimumFractionDigits: 2});
+    const format = (num) => '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2 });
     const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 
     setEl('stat-net', format(netBalance));
@@ -370,7 +382,7 @@ function setTxType(type, isModal = false) {
     const prefix = isModal ? 'modal-' : '';
     document.getElementById(`${prefix}tx-type`).value = type;
     const isExp = type === 'expense';
-    
+
     document.getElementById(`${prefix}type-expense`).className = isExp ? "flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-secondary text-on-secondary shadow-lg" : "flex-1 py-2 text-xs font-bold rounded-lg transition-all text-on-surface-variant hover:text-on-surface";
     document.getElementById(`${prefix}type-income`).className = !isExp ? "flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-primary text-on-primary shadow-lg" : "flex-1 py-2 text-xs font-bold rounded-lg transition-all text-on-surface-variant hover:text-on-surface";
 }
@@ -379,27 +391,27 @@ function setTxType(type, isModal = false) {
 // --- 7. SPA ROUTER (Smooth Page Swapping) ---
 // ==========================================
 async function navigateTo(url) {
-    NProgress.start(); 
-    
+    NProgress.start();
+
     try {
         const response = await fetch(url);
         const html = await response.text();
-        
+
         const parser = new DOMParser();
         const newDoc = parser.parseFromString(html, 'text/html');
         const newMain = newDoc.querySelector('main').innerHTML;
-        
+
         document.querySelector('main').innerHTML = newMain;
         window.history.pushState({}, '', url);
-        
+
         initApp(); // Re-wire everything!
-        
+
     } catch (error) {
         console.error("Navigation failed:", error);
-        window.location.href = url; 
+        window.location.href = url;
     }
-    
-    NProgress.done(); 
+
+    NProgress.done();
 }
 
 function setupNavigation() {
@@ -407,7 +419,7 @@ function setupNavigation() {
         // Remove old listeners to prevent duplicates during SPA navigation
         const newLink = link.cloneNode(true);
         link.parentNode.replaceChild(newLink, link);
-        
+
         newLink.addEventListener('click', (e) => {
             const url = newLink.getAttribute('href');
             if (url && url !== '#' && !url.includes('logout')) {
@@ -415,5 +427,74 @@ function setupNavigation() {
                 navigateTo(url);
             }
         });
+    });
+}
+
+// ==========================================
+// --- FILTER LOGIC ---
+// ==========================================
+function openFilterModal() { document.getElementById('filter-modal')?.classList.remove('hidden'); }
+function closeFilterModal() { document.getElementById('filter-modal')?.classList.add('hidden'); }
+
+// Add this ESC key listener to your existing one so it closes the filter too
+document.addEventListener('keydown', (event) => {
+    if (event.key === "Escape") {
+        closeModal();
+        closeFilterModal();
+    }
+});
+
+function setupFilterHandler() {
+    const form = document.getElementById('filter-form');
+    if (!form) return;
+
+    // Apply Filters
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const categoryId = document.getElementById('filter-category').value;
+        const minAmount = parseFloat(document.getElementById('filter-min-amount').value);
+        const maxAmount = parseFloat(document.getElementById('filter-max-amount').value);
+        const startDate = document.getElementById('filter-date-start').value;
+        const endDate = document.getElementById('filter-date-end').value;
+
+        // Loop through all transactions and keep only the ones that pass all the tests
+        const filteredData = allTransactions.filter(t => {
+            let isMatch = true;
+
+            // Test 1: Category
+            if (categoryId !== 'all' && t.category_id != categoryId) isMatch = false;
+
+            // Test 2: Min Amount
+            if (!isNaN(minAmount) && parseFloat(t.amount) < minAmount) isMatch = false;
+
+            // Test 3: Max Amount
+            if (!isNaN(maxAmount) && parseFloat(t.amount) > maxAmount) isMatch = false;
+
+            // Test 4: Dates
+            // We use transaction_date for accurate calendar filtering
+            const txDate = new Date(t.transaction_date);
+            if (startDate && txDate < new Date(startDate)) isMatch = false;
+            
+            // For the end date, we add one day to include transactions made ON that day
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setDate(end.getDate() + 1); 
+                if (txDate >= end) isMatch = false;
+            }
+
+            return isMatch;
+        });
+
+        // Draw the filtered list and close modal
+        renderTransactionList(filteredData);
+        closeFilterModal();
+    });
+
+    // Clear Filters
+    document.getElementById('btn-clear-filters')?.addEventListener('click', () => {
+        form.reset(); // Blanks out all the form inputs
+        renderTransactionList(allTransactions); // Redraws everything
+        closeFilterModal();
     });
 }
