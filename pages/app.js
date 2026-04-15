@@ -39,12 +39,8 @@ function initApp() {
     if (!currentUser) return;
 
     // 1. Personalize Profile
-
-    // We now target the specific class 'user-name-label' 
-    // so font-size changes won't break the personalization.
     const profileNames = document.querySelectorAll('.user-name-label');
     profileNames.forEach(nameEl => {
-        // Check for both old and new default text to be safe
         if (nameEl.innerText === 'Architect Prime' || nameEl.innerText === 'User') {
             nameEl.innerText = currentUser.username;
         }
@@ -66,6 +62,10 @@ function initApp() {
         if (e.target.id === 'filter-modal') closeFilterModal();
     });
 
+    document.getElementById('edit-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'edit-modal') closeEditModal();
+    });
+
     // 4. Close modal logic (Backdrop click)
     document.getElementById('transaction-modal')?.addEventListener('click', (e) => {
         if (e.target.id === 'transaction-modal') closeModal();
@@ -75,16 +75,19 @@ function initApp() {
     loadCategories('tx-category');
     loadCategories('modal-tx-category');
     loadCategories('filter-category', true);
+    loadCategories('edit-tx-category');
     setupFormHandler('entry-form');
     setupFormHandler('modal-entry-form');
+    setupEditFormHandler();
 
-    // Load the transactions (this also runs the dashboard math and renders the lists)
+    // Load the transactions
     loadTransactions();
-    // (Add this inside initApp)
+
     // 5.5 Settings Page Setup
     if (window.location.pathname.includes('settings.html')) {
         loadSettings();
         setupProfileForm();
+        setupDeleteAccount();
     }
 
     // 6. Initialize Search & Navigation
@@ -103,14 +106,17 @@ window.addEventListener('popstate', () => {
 
 // ESCAPE Key Global Listener to close modal
 document.addEventListener('keydown', (event) => {
-    if (event.key === "Escape") closeModal();
+    if (event.key === "Escape") {
+        closeModal();
+        closeFilterModal();
+        closeEditModal();
+    }
 });
 
 
 // ==========================================
 // --- 4. DATA & API FUNCTIONS ---
 // ==========================================
-// Replace your existing loadCategories with this slightly updated one:
 async function loadCategories(selectId, isFilter = false) {
     const categorySelect = document.getElementById(selectId);
     if (!categorySelect) return;
@@ -119,7 +125,6 @@ async function loadCategories(selectId, isFilter = false) {
         const response = await fetch(`${API_URL}/categories`);
         const categories = await response.json();
 
-        // If it's the filter, keep the "All Categories" option. Otherwise, make it a disabled placeholder.
         categorySelect.innerHTML = isFilter
             ? '<option value="all" selected>All Categories</option>'
             : '<option value="" disabled selected>Select a category</option>';
@@ -139,11 +144,15 @@ function setupFormHandler(formId) {
     const form = document.getElementById(formId);
     if (!form) return;
 
-    form.addEventListener('submit', async (e) => {
+    // SPA protection: clone form to remove old listeners
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+
+    newForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const prefix = formId.includes('modal') ? 'modal-' : '';
-        const submitBtn = form.querySelector('button[type="submit"]') || document.querySelector(`button[form="${formId}"]`);
+        const submitBtn = newForm.querySelector('button[type="submit"]') || document.querySelector(`button[form="${formId}"]`);
         const originalText = submitBtn.innerText;
 
         submitBtn.innerText = 'RECORDING...';
@@ -167,7 +176,7 @@ function setupFormHandler(formId) {
             });
 
             if (response.ok) {
-                form.reset();
+                newForm.reset();
                 if (prefix === 'modal-') closeModal();
                 loadTransactions();
             } else {
@@ -187,16 +196,10 @@ async function loadTransactions() {
         const response = await fetch(`${API_URL}/transactions?user_id=${CURRENT_USER_ID}`);
         let transactions = await response.json();
 
-        // SORT DESCENDING (Newest First)
         transactions.sort((a, b) => new Date(b.created_at || b.transaction_date) - new Date(a.created_at || a.transaction_date));
-
-        // Save to our global array for instant searching
         allTransactions = transactions;
 
-        // Calculate math for dashboard/header stats
         updateDashboardStats(allTransactions);
-
-        // Draw the full list to the screen
         renderTransactionList(allTransactions);
 
     } catch (err) {
@@ -236,32 +239,40 @@ function renderTransactionList(transactionsToRender) {
                         <p class="text-on-surface-variant text-sm">${t.category_name} ${descHtml} • ${formattedDate} at ${formattedTime}</p>
                     </div>
                 </div>
-                <div class="text-right flex flex-col justify-center h-full">
-                    <p class="text-xl font-bold ${colorClass}">${sign}₹${formattedAmount}</p>
+                <div class="flex items-center gap-4">
+                    <div class="text-right flex flex-col justify-center h-full">
+                        <p class="text-xl font-bold ${colorClass}">${sign}₹${formattedAmount}</p>
+                    </div>
+                    <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center bg-surface-container-highest rounded-lg p-1 border border-outline-variant/20">
+                        <button onclick="openEditModal(${t.id})" title="Edit" class="p-1.5 rounded-md hover:bg-surface-bright text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center">
+                            <span class="material-symbols-outlined text-[20px]">edit</span>
+                        </button>
+                        <button onclick="deleteTransaction(${t.id})" title="Delete" class="p-1.5 rounded-md hover:bg-surface-bright text-on-surface-variant hover:text-error transition-colors flex items-center justify-center">
+                            <span class="material-symbols-outlined text-[20px]">delete</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
     }).join('');
 }
 
-// 3. THE INSTANT SEARCH FUNCTION
 function setupSearch() {
     const searchInput = document.getElementById('tx-search');
     if (!searchInput) return;
 
-    searchInput.addEventListener('input', (e) => {
+    const newSearchInput = searchInput.cloneNode(true);
+    searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+
+    newSearchInput.addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase();
-
         const filteredData = allTransactions.filter(t => {
-            // Safely handle descriptions that might be null/empty
             const safeDesc = t.description ? t.description.toLowerCase() : "";
-
             return t.name.toLowerCase().includes(searchTerm) ||
                 t.category_name.toLowerCase().includes(searchTerm) ||
                 t.amount.toString().includes(searchTerm) ||
-                safeDesc.includes(searchTerm); // <-- Now it searches descriptions safely!
+                safeDesc.includes(searchTerm);
         });
-
         renderTransactionList(filteredData);
     });
 }
@@ -401,9 +412,6 @@ function setTxType(type, isModal = false) {
 // ==========================================
 // --- 7. SPA ROUTER (Smooth Page Swapping) ---
 // ==========================================
-// ==========================================
-// --- 7. SPA ROUTER (Smooth Page Swapping) ---
-// ==========================================
 async function navigateTo(url) {
     if (typeof NProgress !== 'undefined') NProgress.start();
 
@@ -415,31 +423,23 @@ async function navigateTo(url) {
         const parser = new DOMParser();
         const newDoc = parser.parseFromString(html, 'text/html');
 
-        // 1. Swap out the main content
-        const newMain = newDoc.querySelector('main').innerHTML;
-        document.querySelector('main').innerHTML = newMain;
-
-        // 2. Swap out the sidebar so links and active highlights refresh!
-        const newAside = newDoc.querySelector('aside').innerHTML;
-        document.querySelector('aside').innerHTML = newAside;
+        // Swap out content
+        document.querySelector('main').innerHTML = newDoc.querySelector('main').innerHTML;
+        document.querySelector('aside').innerHTML = newDoc.querySelector('aside').innerHTML;
 
         window.history.pushState({}, '', url);
-
-        initApp(); // Re-wire everything!
+        initApp();
 
     } catch (error) {
         console.error("Navigation failed:", error);
-        // Fallback to a hard reload if the fetch fails
         window.location.href = url;
     }
 
     if (typeof NProgress !== 'undefined') NProgress.done();
 }
 
-
 function setupNavigation() {
     document.querySelectorAll('aside nav a, aside .flex-1 a').forEach(link => {
-        // Remove old listeners to prevent duplicates during SPA navigation
         const newLink = link.cloneNode(true);
         link.parentNode.replaceChild(newLink, link);
 
@@ -454,25 +454,19 @@ function setupNavigation() {
 }
 
 // ==========================================
-// --- FILTER LOGIC ---
+// --- 8. FILTER LOGIC ---
 // ==========================================
 function openFilterModal() { document.getElementById('filter-modal')?.classList.remove('hidden'); }
 function closeFilterModal() { document.getElementById('filter-modal')?.classList.add('hidden'); }
-
-// Add this ESC key listener to your existing one so it closes the filter too
-document.addEventListener('keydown', (event) => {
-    if (event.key === "Escape") {
-        closeModal();
-        closeFilterModal();
-    }
-});
 
 function setupFilterHandler() {
     const form = document.getElementById('filter-form');
     if (!form) return;
 
-    // Apply Filters
-    form.addEventListener('submit', (e) => {
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+
+    newForm.addEventListener('submit', (e) => {
         e.preventDefault();
 
         const categoryId = document.getElementById('filter-category').value;
@@ -481,72 +475,53 @@ function setupFilterHandler() {
         const startDate = document.getElementById('filter-date-start').value;
         const endDate = document.getElementById('filter-date-end').value;
 
-        // Loop through all transactions and keep only the ones that pass all the tests
         const filteredData = allTransactions.filter(t => {
             let isMatch = true;
-
-            // Test 1: Category
             if (categoryId !== 'all' && t.category_id != categoryId) isMatch = false;
-
-            // Test 2: Min Amount
             if (!isNaN(minAmount) && parseFloat(t.amount) < minAmount) isMatch = false;
-
-            // Test 3: Max Amount
             if (!isNaN(maxAmount) && parseFloat(t.amount) > maxAmount) isMatch = false;
-
-            // Test 4: Dates
-            // We use transaction_date for accurate calendar filtering
+            
             const txDate = new Date(t.transaction_date);
             if (startDate && txDate < new Date(startDate)) isMatch = false;
-
-            // For the end date, we add one day to include transactions made ON that day
             if (endDate) {
                 const end = new Date(endDate);
                 end.setDate(end.getDate() + 1);
                 if (txDate >= end) isMatch = false;
             }
-
             return isMatch;
         });
 
-        // Draw the filtered list and close modal
         renderTransactionList(filteredData);
         closeFilterModal();
     });
 
-    // Clear Filters
     document.getElementById('btn-clear-filters')?.addEventListener('click', () => {
-        form.reset(); // Blanks out all the form inputs
-        renderTransactionList(allTransactions); // Redraws everything
+        newForm.reset(); 
+        renderTransactionList(allTransactions); 
         closeFilterModal();
     });
 }
 
-
 // ==========================================
-// --- SETTINGS & PROFILE LOGIC ---
+// --- 9. SETTINGS & PROFILE LOGIC ---
 // ==========================================
-
 function loadSettings() {
-    // 1. Find the input boxes using their IDs
     const nameInput = document.getElementById('profile-name');
     const emailInput = document.getElementById('profile-email');
 
-    // 2. If the boxes exist, instantly fill them with the user's current info
-    if (nameInput && currentUser) {
-        nameInput.value = currentUser.username;
-    }
-
-    if (emailInput && currentUser) {
-        emailInput.value = currentUser.email;
-    }
+    if (nameInput && currentUser) nameInput.value = currentUser.username;
+    if (emailInput && currentUser) emailInput.value = currentUser.email;
 }
 
 function setupProfileForm() {
     const form = document.getElementById('profile-form');
     if (!form) return;
 
-    form.addEventListener('submit', async (e) => {
+    // SPA protection to prevent duplicate listeners
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+
+    newForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const btn = document.getElementById('btn-save-profile');
@@ -561,7 +536,6 @@ function setupProfileForm() {
             newPassword: document.getElementById('profile-new-password').value
         };
 
-        // Minor validation
         if ((payload.currentPassword && !payload.newPassword) || (!payload.currentPassword && payload.newPassword)) {
             alert("To change your password, you must provide both your current and new password.");
             btn.innerText = originalText;
@@ -580,16 +554,11 @@ function setupProfileForm() {
 
             if (response.ok) {
                 alert('Profile updated successfully!');
-
-                // Update LocalStorage so the top-right username changes immediately 
                 currentUser.username = payload.username;
                 currentUser.email = payload.email;
                 localStorage.setItem('ledger_user', JSON.stringify(currentUser));
-
-                // Update UI Names dynamically
                 document.querySelectorAll('.user-name-label').forEach(el => el.innerText = currentUser.username);
-
-                // Clear password fields for safety
+                
                 document.getElementById('profile-current-password').value = '';
                 document.getElementById('profile-new-password').value = '';
             } else {
@@ -600,6 +569,145 @@ function setupProfileForm() {
         } finally {
             btn.innerText = originalText;
             btn.disabled = false;
+        }
+    });
+}
+
+function setupDeleteAccount() {
+    const deleteBtn = document.getElementById('btn-delete-account');
+    
+    // Debugging safety net
+    if (!deleteBtn) {
+        console.warn("Delete button not found! Make sure your button in settings.html has exactly id='btn-delete-account'");
+        return;
+    }
+
+    // SPA Protection: prevent multiple events piling up
+    const newBtn = deleteBtn.cloneNode(true);
+    deleteBtn.parentNode.replaceChild(newBtn, deleteBtn);
+
+    newBtn.addEventListener('click', async () => {
+        if (!confirm("Are you sure you want to deactivate your account?")) return;
+        if (!confirm("Final warning: You will be logged out immediately. Proceed?")) return;
+
+        try {
+            const response = await fetch(`${API_URL}/users/${CURRENT_USER_ID}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                alert("Account deactivated.");
+                logoutUser(); 
+            } else {
+                const result = await response.json();
+                alert(result.error || "Failed to deactivate account");
+            }
+        } catch (error) {
+            console.error("Delete Error:", error);
+            alert("Error: " + error.message);
+        }
+    });
+}
+
+
+// ==========================================
+// --- 8. EDIT & DELETE LOGIC ---
+// ==========================================
+
+function closeEditModal() { 
+    document.getElementById('edit-modal')?.classList.add('hidden'); 
+}
+
+function setEditTxType(type) {
+    document.getElementById('edit-tx-type').value = type;
+    const isExp = type === 'expense';
+    document.getElementById('edit-type-expense').className = isExp ? "flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-secondary text-on-secondary shadow-lg" : "flex-1 py-2 text-xs font-bold rounded-lg transition-all text-on-surface-variant hover:text-on-surface";
+    document.getElementById('edit-type-income').className = !isExp ? "flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-primary text-on-primary shadow-lg" : "flex-1 py-2 text-xs font-bold rounded-lg transition-all text-on-surface-variant hover:text-on-surface";
+}
+
+function openEditModal(txId) {
+    // 1. Find the transaction in our global array
+    const tx = allTransactions.find(t => t.id === txId);
+    if (!tx) return;
+
+    // 2. Pre-fill the form
+    document.getElementById('edit-tx-id').value = tx.id;
+    document.getElementById('edit-tx-amount').value = tx.amount;
+    document.getElementById('edit-tx-name').value = tx.name;
+    document.getElementById('edit-tx-category').value = tx.category_id;
+    document.getElementById('edit-tx-desc').value = tx.description || '';
+    
+    // 3. Set the type buttons
+    setEditTxType(tx.transaction_type);
+
+    // 4. Show the modal
+    document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+async function deleteTransaction(txId) {
+    if (!confirm("Are you sure you want to delete this transaction? This cannot be undone.")) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/transactions/${txId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            loadTransactions(); // Reload list
+        } else {
+            alert("Failed to delete transaction.");
+        }
+    } catch (error) {
+        alert("Cannot reach server.");
+    }
+}
+
+function setupEditFormHandler() {
+    const form = document.getElementById('edit-entry-form');
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const txId = document.getElementById('edit-tx-id').value;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerText;
+
+        submitBtn.innerText = 'SAVING...';
+        submitBtn.disabled = true;
+
+        // Fetch original transaction to preserve its date
+        const originalTx = allTransactions.find(t => t.id == txId);
+        // Format date for MySQL (YYYY-MM-DD)
+        const formattedDate = new Date(originalTx.transaction_date).toISOString().split('T')[0];
+
+        const payload = {
+            category_id: document.getElementById('edit-tx-category').value,
+            transaction_type: document.getElementById('edit-tx-type').value,
+            name: document.getElementById('edit-tx-name').value,
+            amount: parseFloat(document.getElementById('edit-tx-amount').value),
+            transaction_date: formattedDate,
+            description: document.getElementById('edit-tx-desc').value || null
+        };
+
+        try {
+            const response = await fetch(`${API_URL}/transactions/${txId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                closeEditModal();
+                loadTransactions(); // Redraw with new data
+            } else {
+                alert('Error updating transaction');
+            }
+        } catch (error) {
+            alert('Cannot reach server');
+        } finally {
+            submitBtn.innerText = originalText;
+            submitBtn.disabled = false;
         }
     });
 }

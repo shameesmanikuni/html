@@ -372,6 +372,63 @@
         </form>
     </div>
 </div>
+<div id="edit-modal" class="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center hidden p-4">
+    <div class="bg-surface-container-high w-full max-w-md rounded-2xl p-6 shadow-2xl border-t border-white/5 relative animate-in fade-in zoom-in duration-200">
+
+        <div class="flex items-center gap-4 mb-4">
+            <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                <span class="material-symbols-outlined text-3xl">edit</span>
+            </div>
+            <h3 class="text-3xl font-bold tracking-tight">Edit Entry</h3>
+        </div>
+
+        <div class="flex bg-surface-container-highest p-1 rounded-xl mb-4">
+            <button type="button" id="edit-type-expense" onclick="setEditTxType('expense')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-secondary text-on-secondary shadow-lg">
+                EXPENSE
+            </button>
+            <button type="button" id="edit-type-income" onclick="setEditTxType('income')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all text-on-surface-variant hover:text-on-surface">
+                INCOME
+            </button>
+        </div>
+
+        <input type="hidden" id="edit-tx-id">
+        <input type="hidden" id="edit-tx-type" value="expense">
+
+        <form id="edit-entry-form" class="space-y-4">
+            <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Amount</label>
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-black text-xl">₹</span>
+                    <input id="edit-tx-amount" class="w-full bg-surface-container-highest border-none rounded-xl py-4 pl-10 pr-4 text-2xl font-black text-on-surface focus:ring-2 focus:ring-primary" step="0.01" min="0" type="number" required />
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Name / Payee</label>
+                <input id="edit-tx-name" class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary" type="text" required />
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Category</label>
+                <select id="edit-tx-category" class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm font-bold text-on-surface focus:ring-1 focus:ring-primary appearance-none" required></select>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Description</label>
+                <input id="edit-tx-desc" class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-sm focus:ring-1 focus:ring-primary" type="text" />
+            </div>
+
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeEditModal()" class="flex-1 bg-surface-container-highest text-on-surface font-bold py-3 rounded-xl hover:bg-surface-bright transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-[2] bg-primary text-on-primary font-black py-3 rounded-xl shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all">
+                    Apply Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 </body>
 
 </html>

@@ -60,7 +60,12 @@ app.post('/api/login', async (req, res) => {
 
         const user = users[0];
 
-        // Compare the provided password with the hashed password in the DB
+        // --- CHANGE 1: THE DEACTIVATION CHECK ---
+        if (!user.is_active) {
+            return res.status(403).json({ error: "This account has been deactivated. Please contact support." });
+        }
+
+        // Compare the provided password...
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
             return res.status(400).json({ error: "Invalid email or password" });
@@ -68,14 +73,14 @@ app.post('/api/login', async (req, res) => {
 
         // Generate a JWT token for session management
         const token = jwt.sign(
-            { id: user.id, username: user.username }, 
-            process.env.JWT_SECRET || 'fallback_secret_key', 
+            { id: user.id, username: user.username },
+            process.env.JWT_SECRET || 'fallback_secret_key',
             { expiresIn: '2h' }
         );
 
         // Send back the token and user details
-        res.json({ 
-            message: "Login successful", 
+        res.json({
+            message: "Login successful",
             token: token,
             user: { id: user.id, username: user.username, email: user.email }
         });
@@ -123,7 +128,7 @@ app.put('/api/users/:id', async (req, res) => {
 
             // Hash the new password
             const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-            
+
             // Update everything including password
             await pool.query(
                 'UPDATE users SET username = ?, email = ?, password_hash = ? WHERE id = ?',
@@ -147,6 +152,26 @@ app.put('/api/users/:id', async (req, res) => {
 });
 
 
+// DELETE USER ACCOUNT
+// --- CHANGE 2: THE SOFT DELETE ROUTE ---
+// DEACTIVATE USER ACCOUNT (Soft Delete)
+app.delete('/api/users/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [result] = await pool.query('UPDATE users SET is_active = FALSE WHERE id = ?', [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json({ message: "Account deactivated successfully." });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to deactivate account" });
+    }
+});
+
+
 // ==========================================
 // --- TRANSACTION & CATEGORY ROUTES ---
 // ==========================================
@@ -155,7 +180,7 @@ app.put('/api/users/:id', async (req, res) => {
 app.get('/api/transactions', async (req, res) => {
     // We now look for the user_id in the query string, 
     // falling back to 1 if it's not provided (for safety/testing).
-    const userId = req.query.user_id || 1; 
+    const userId = req.query.user_id || 1;
 
     try {
         const [rows] = await pool.query(`
